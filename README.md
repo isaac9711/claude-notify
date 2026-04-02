@@ -38,10 +38,9 @@ cd claude-notify
 1. [Releases](https://github.com/isaac9711/claude-notify/releases)에서 macOS 버전에 맞는 DMG 다운로드
 2. DMG 열기
 3. `ClaudeNotify.app`을 `Applications` 폴더로 드래그
-4. Gatekeeper 우회:
-```bash
-xattr -cr /Applications/ClaudeNotify.app
-```
+4. 첫 실행 시 보안 경고가 뜨면 **우클릭 → 열기 → 열기** 클릭 (최초 1회)
+
+> **Tip:** 또는 터미널에서 `xattr -cr /Applications/ClaudeNotify.app` 실행하면 보안 경고 없이 사용할 수 있습니다.
 
 ## Setup
 
@@ -181,7 +180,7 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
 - 시스템 설정 > 알림 > ClaudeNotify 항목에서 알림이 "배너" 또는 "알림"으로 설정되어 있는지 확인
 
 ### 알림 클릭 시 "열 수 없습니다" 에러
-- `xattr -cr /Applications/ClaudeNotify.app` 실행
+- **우클릭 → 열기**로 한 번 실행하거나, `xattr -cr /Applications/ClaudeNotify.app` 실행
 - `open /Applications/ClaudeNotify.app`으로 손쉬운 사용 설정 확인
 
 ### 재빌드 후 알림 클릭이 안 됨
