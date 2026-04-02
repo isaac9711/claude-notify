@@ -85,6 +85,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
         let args = ProcessInfo.processInfo.arguments
         guard args.count > 1 else {
+            // First launch / no args: check accessibility and guide user
+            let trusted = AXIsProcessTrustedWithOptions(
+                [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): false] as CFDictionary
+            )
+            if !trusted {
+                // Open Accessibility settings
+                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
+                fputs("Accessibility permission required. Please add ClaudeNotify in the opened settings.\n", stderr)
+            } else {
+                fputs("Accessibility permission already granted.\n", stderr)
+            }
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) { NSApp.terminate(nil) }
             return
         }
