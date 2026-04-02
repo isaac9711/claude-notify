@@ -47,15 +47,12 @@ xattr -cr /Applications/ClaudeNotify.app
 
 ### 1. macOS 권한 설정
 
-**손쉬운 사용 (필수):**
-- 시스템 설정 > 개인정보 보호 및 보안 > 손쉬운 사용
-- `+` 버튼 > `/Applications/ClaudeNotify.app` 추가
-
-**알림 허용 (첫 실행 시 자동):**
+**손쉬운 사용 + 알림 허용 (첫 실행):**
 ```bash
-open /Applications/ClaudeNotify.app --args -title "Test" -message "Setup" -sound default
+open /Applications/ClaudeNotify.app
 ```
-알림 권한 팝업이 뜨면 허용합니다.
+- 손쉬운 사용 설정 화면이 자동으로 열립니다. `+` 버튼으로 ClaudeNotify 추가
+- 이후 다시 실행하면 알림 권한 팝업이 뜹니다. 허용해주세요
 
 **Terminal 자동화 권한 (Terminal.app 사용 시):**
 ```bash
@@ -185,7 +182,7 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
 
 ### 알림 클릭 시 "열 수 없습니다" 에러
 - `xattr -cr /Applications/ClaudeNotify.app` 실행
-- 시스템 설정 > 손쉬운 사용에 ClaudeNotify가 추가/활성화되어 있는지 확인
+- `open /Applications/ClaudeNotify.app`으로 손쉬운 사용 설정 확인
 
 ### 재빌드 후 알림 클릭이 안 됨
 - 빌드 시 바이너리 해시가 변경되어 손쉬운 사용 권한이 무효화됩니다
