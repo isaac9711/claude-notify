@@ -35,20 +35,12 @@ cd claude-notify
 
 ### Option 2: Pre-built Download (DMG)
 
-1. [Releases](https://github.com/isaac9711/claude-notify/releases)에서 `ClaudeNotify.dmg` 다운로드
+1. [Releases](https://github.com/isaac9711/claude-notify/releases)에서 macOS 버전에 맞는 DMG 다운로드
 2. DMG 열기
-3. `Install` 파일을 **우클릭 → 열기** (Gatekeeper 우회, 최초 1회만 필요)
-4. 설치 경로 확인 후 `y` 입력
-
-> **Note:** 더블클릭 시 macOS 보안 정책으로 차단될 수 있습니다. 반드시 **우클릭 → 열기**로 실행해주세요.
-
-### Option 3: Pre-built Download (ZIP)
-
-1. [Releases](https://github.com/isaac9711/claude-notify/releases)에서 `ClaudeNotify.zip` 다운로드
-2. 압축 해제 후 `ClaudeNotify.app`을 `~/.claude/`로 이동
-3. Gatekeeper 우회:
+3. `ClaudeNotify.app`을 `Applications` 폴더로 드래그
+4. Gatekeeper 우회:
 ```bash
-xattr -cr ~/.claude/ClaudeNotify.app
+xattr -cr /Applications/ClaudeNotify.app
 ```
 
 ## Setup
@@ -57,23 +49,23 @@ xattr -cr ~/.claude/ClaudeNotify.app
 
 **손쉬운 사용 (필수):**
 - 시스템 설정 > 개인정보 보호 및 보안 > 손쉬운 사용
-- `+` 버튼 > `~/.claude/ClaudeNotify.app` 추가 (Cmd+Shift+G로 경로 입력)
+- `+` 버튼 > `/Applications/ClaudeNotify.app` 추가
 
 **알림 허용 (첫 실행 시 자동):**
 ```bash
-open ~/.claude/ClaudeNotify.app --args -title "Test" -message "Setup" -sound default
+open /Applications/ClaudeNotify.app --args -title "Test" -message "Setup" -sound default
 ```
 알림 권한 팝업이 뜨면 허용합니다.
 
 **Terminal 자동화 권한 (Terminal.app 사용 시):**
 ```bash
-open ~/.claude/ClaudeNotify.app --args --setup-terminal
+open /Applications/ClaudeNotify.app --args --setup-terminal
 ```
 "ClaudeNotify가 Terminal을 제어하려고 합니다" 팝업이 뜨면 허용합니다.
 
 ### 2. Claude Code Hook 설정
 
-`~/.claude/settings.json`의 `hooks` 섹션에 추가:
+`/Applications/settings.json`의 `hooks` 섹션에 추가:
 
 ```json
 {
@@ -84,7 +76,7 @@ open ~/.claude/ClaudeNotify.app --args --setup-terminal
         "hooks": [
           {
             "type": "command",
-            "command": "S=; if [ \"$__CFBundleIdentifier\" = \"com.googlecode.iterm2\" ]; then S=\"$ITERM_SESSION_ID\"; elif [ \"$__CFBundleIdentifier\" = \"com.apple.Terminal\" ]; then S=\"/dev/$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')\"; fi; open ~/.claude/ClaudeNotify.app --args -title 'Claude Code' -message \"입력 대기 — $(basename \"$PWD\")\" -sound default -activate \"$__CFBundleIdentifier\" -workspace \"$PWD\" -session \"$S\""
+            "command": "S=; if [ \"$__CFBundleIdentifier\" = \"com.googlecode.iterm2\" ]; then S=\"$ITERM_SESSION_ID\"; elif [ \"$__CFBundleIdentifier\" = \"com.apple.Terminal\" ]; then S=\"/dev/$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')\"; fi; open /Applications/ClaudeNotify.app --args -title 'Claude Code' -message \"입력 대기 — $(basename \"$PWD\")\" -sound default -activate \"$__CFBundleIdentifier\" -workspace \"$PWD\" -session \"$S\""
           }
         ]
       }
@@ -94,7 +86,7 @@ open ~/.claude/ClaudeNotify.app --args --setup-terminal
         "hooks": [
           {
             "type": "command",
-            "command": "S=; if [ \"$__CFBundleIdentifier\" = \"com.googlecode.iterm2\" ]; then S=\"$ITERM_SESSION_ID\"; elif [ \"$__CFBundleIdentifier\" = \"com.apple.Terminal\" ]; then S=\"/dev/$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')\"; fi; open ~/.claude/ClaudeNotify.app --args -title 'Claude Code' -message \"작업 완료 — $(basename \"$PWD\")\" -sound default -activate \"$__CFBundleIdentifier\" -workspace \"$PWD\" -session \"$S\""
+            "command": "S=; if [ \"$__CFBundleIdentifier\" = \"com.googlecode.iterm2\" ]; then S=\"$ITERM_SESSION_ID\"; elif [ \"$__CFBundleIdentifier\" = \"com.apple.Terminal\" ]; then S=\"/dev/$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')\"; fi; open /Applications/ClaudeNotify.app --args -title 'Claude Code' -message \"작업 완료 — $(basename \"$PWD\")\" -sound default -activate \"$__CFBundleIdentifier\" -workspace \"$PWD\" -session \"$S\""
           }
         ]
       }
@@ -159,7 +151,7 @@ Claude Code hook 실행
 
 ```bash
 # 알림 전송
-open ~/.claude/ClaudeNotify.app --args \
+open /Applications/ClaudeNotify.app --args \
   -title "제목" \
   -message "내용" \
   -sound default \
@@ -168,11 +160,11 @@ open ~/.claude/ClaudeNotify.app --args \
   -session <sessionId>
 
 # 현재 포커스된 창 제목 조회 (Accessibility 필요)
-~/.claude/ClaudeNotify.app/Contents/MacOS/ClaudeNotify \
+/Applications/ClaudeNotify.app/Contents/MacOS/ClaudeNotify \
   --get-window-title <bundleId>
 
 # Terminal 자동화 권한 요청
-open ~/.claude/ClaudeNotify.app --args --setup-terminal
+open /Applications/ClaudeNotify.app --args --setup-terminal
 ```
 
 ### Parameters
@@ -192,7 +184,7 @@ open ~/.claude/ClaudeNotify.app --args --setup-terminal
 - 시스템 설정 > 알림 > ClaudeNotify 항목에서 알림이 "배너" 또는 "알림"으로 설정되어 있는지 확인
 
 ### 알림 클릭 시 "열 수 없습니다" 에러
-- `xattr -cr ~/.claude/ClaudeNotify.app` 실행
+- `xattr -cr /Applications/ClaudeNotify.app` 실행
 - 시스템 설정 > 손쉬운 사용에 ClaudeNotify가 추가/활성화되어 있는지 확인
 
 ### 재빌드 후 알림 클릭이 안 됨
@@ -201,7 +193,7 @@ open ~/.claude/ClaudeNotify.app --args --setup-terminal
 
 ### Terminal 탭 이동이 안 됨
 - 시스템 설정 > 자동화 > ClaudeNotify에 Terminal이 허용되어 있는지 확인
-- 없으면: `open ~/.claude/ClaudeNotify.app --args --setup-terminal` 실행
+- 없으면: `open /Applications/ClaudeNotify.app --args --setup-terminal` 실행
 
 ### VS Code에서 iTerm 탭으로 이동됨
 - VS Code 터미널에 `ITERM_SESSION_ID` 환경변수가 남아있는 경우 발생
@@ -210,15 +202,15 @@ open ~/.claude/ClaudeNotify.app --args --setup-terminal
 ## Architecture
 
 ```
-~/.claude/
-├── ClaudeNotify.app/
-│   └── Contents/
-│       ├── Info.plist          # Bundle ID: com.claude.notify
-│       ├── MacOS/
-│       │   └── ClaudeNotify    # Compiled binary
-│       └── Resources/
-│           └── AppIcon.icns    # Bell icon
-└── settings.json               # Claude Code hook configuration
+/Applications/ClaudeNotify.app/
+└── Contents/
+    ├── Info.plist          # Bundle ID: com.claude.notify
+    ├── MacOS/
+    │   └── ClaudeNotify    # Compiled binary
+    └── Resources/
+        └── AppIcon.icns    # Bell icon
+
+~/.claude/settings.json     # Claude Code hook configuration
 ```
 
 **Tech Stack:**

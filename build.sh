@@ -2,7 +2,7 @@
 set -e
 
 APP_NAME="ClaudeNotify"
-APP_DIR="$HOME/.claude/${APP_NAME}.app"
+APP_DIR="/Applications/${APP_NAME}.app"
 CONTENTS_DIR="${APP_DIR}/Contents"
 MACOS_DIR="${CONTENTS_DIR}/MacOS"
 RESOURCES_DIR="${CONTENTS_DIR}/Resources"

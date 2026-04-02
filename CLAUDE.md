@@ -8,7 +8,7 @@ macOS용 Claude Code 알림 앱. Swift + Cocoa + UNUserNotificationCenter 기반
 ./build.sh
 ```
 
-빌드 결과물: `~/.claude/ClaudeNotify.app`
+빌드 결과물: `/Applications/ClaudeNotify.app`
 
 재빌드 후 반드시 시스템 설정 > 손쉬운 사용에서 ClaudeNotify를 OFF → ON 토글해야 함 (바이너리 해시 변경으로 인한 권한 무효화).
 
