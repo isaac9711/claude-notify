@@ -1,6 +1,6 @@
 # ClaudeNotify
 
-[English](README.md)
+[English](README.md) | **한국어** | [中文](README.zh.md) | [日本語](README.ja.md) | [Español](README.es.md) | [Tiếng Việt](README.vi.md) | [Português](README.pt.md)
 
 Claude Code 작업 완료/입력 대기 시 macOS 네이티브 알림을 보내는 앱입니다.
 

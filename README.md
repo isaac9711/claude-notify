@@ -1,6 +1,6 @@
 # ClaudeNotify
 
-[한국어](README.ko.md)
+**English** | [한국어](README.ko.md) | [中文](README.zh.md) | [日本語](README.ja.md) | [Español](README.es.md) | [Tiếng Việt](README.vi.md) | [Português](README.pt.md)
 
 A macOS native notification app for Claude Code. Get notified when tasks complete or input is needed.
 
