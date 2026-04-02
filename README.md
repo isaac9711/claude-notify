@@ -33,7 +33,16 @@ cd claude-notify
 ./build.sh
 ```
 
-### Option 2: Pre-built Download
+### Option 2: Pre-built Download (DMG)
+
+1. [Releases](https://github.com/isaac9711/claude-notify/releases)에서 `ClaudeNotify.dmg` 다운로드
+2. DMG 열기
+3. `Install` 파일을 **우클릭 → 열기** (Gatekeeper 우회, 최초 1회만 필요)
+4. 설치 경로 확인 후 `y` 입력
+
+> **Note:** 더블클릭 시 macOS 보안 정책으로 차단될 수 있습니다. 반드시 **우클릭 → 열기**로 실행해주세요.
+
+### Option 3: Pre-built Download (ZIP)
 
 1. [Releases](https://github.com/isaac9711/claude-notify/releases)에서 `ClaudeNotify.zip` 다운로드
 2. 압축 해제 후 `ClaudeNotify.app`을 `~/.claude/`로 이동
