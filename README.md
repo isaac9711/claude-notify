@@ -44,6 +44,14 @@ cd claude-notify
 ./build.sh
 ```
 
+### Upgrade
+
+1. Download the new DMG (or `git pull && ./build.sh`)
+2. Drag `ClaudeNotify.app` to `Applications` and replace the existing app
+3. Toggle ClaudeNotify **OFF → ON** in System Settings > Accessibility (binary hash changes invalidate the permission)
+
+> Hook configuration in `~/.claude/settings.json` is preserved — no changes needed.
+
 ## Setup
 
 ### 1. macOS Permissions

@@ -44,6 +44,14 @@ cd claude-notify
 ./build.sh
 ```
 
+### 升级
+
+1. 下载新的 DMG（或 `git pull && ./build.sh`）
+2. 将 `ClaudeNotify.app` 拖入 `Applications` 覆盖现有应用
+3. 在系统设置 > 辅助功能中将 ClaudeNotify **关闭 → 开启**（二进制文件哈希变更会使权限失效）
+
+> `~/.claude/settings.json` 中的 Hook 配置会保留，无需修改。
+
 ## 设置
 
 ### 1. macOS 权限

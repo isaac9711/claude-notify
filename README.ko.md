@@ -44,6 +44,14 @@ cd claude-notify
 ./build.sh
 ```
 
+### Upgrade (업그레이드)
+
+1. 새 DMG 다운로드 (또는 `git pull && ./build.sh`)
+2. `ClaudeNotify.app`을 `Applications`에 덮어쓰기
+3. 시스템 설정 > 손쉬운 사용에서 ClaudeNotify를 **OFF → ON** 토글 (바이너리 해시 변경으로 권한 재설정 필요)
+
+> `~/.claude/settings.json`의 Hook 설정은 유지됩니다.
+
 ## Setup
 
 ### 1. macOS 권한 설정
