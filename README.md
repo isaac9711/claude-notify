@@ -27,15 +27,7 @@ Click a notification to navigate to the **exact window and tab** where Claude Co
 
 ## Installation
 
-### Option 1: Source Build (recommended)
-
-```bash
-git clone https://github.com/isaac9711/claude-notify.git
-cd claude-notify
-./build.sh
-```
-
-### Option 2: Pre-built Download (DMG)
+### Option 1: Pre-built Download (DMG)
 
 1. Download the DMG for your macOS version from [Releases](https://github.com/isaac9711/claude-notify/releases)
 2. Open the DMG
@@ -43,6 +35,14 @@ cd claude-notify
 4. On first launch, if a security warning appears, **Right-click → Open → Open** (one-time only)
 
 > **Tip:** Alternatively, run `xattr -cr /Applications/ClaudeNotify.app` in Terminal to skip the security warning.
+
+### Option 2: Source Build
+
+```bash
+git clone https://github.com/isaac9711/claude-notify.git
+cd claude-notify
+./build.sh
+```
 
 ## Setup
 

@@ -27,15 +27,7 @@ Clique em uma notificação para navegar até a **janela e aba exatas** onde o C
 
 ## Instalação
 
-### Opção 1: Compilação a partir do código-fonte (recomendado)
-
-```bash
-git clone https://github.com/isaac9711/claude-notify.git
-cd claude-notify
-./build.sh
-```
-
-### Opção 2: Download pré-compilado (DMG)
+### Opção 1: Download pré-compilado (DMG)
 
 1. Baixe o DMG correspondente à sua versão do macOS em [Releases](https://github.com/isaac9711/claude-notify/releases)
 2. Abra o DMG
@@ -43,6 +35,14 @@ cd claude-notify
 4. Na primeira execução, se um aviso de segurança aparecer, **Clique com o botão direito → Abrir → Abrir** (apenas uma vez)
 
 > **Dica:** Alternativamente, execute `xattr -cr /Applications/ClaudeNotify.app` no Terminal para ignorar o aviso de segurança.
+
+### Opção 2: Compilação a partir do código-fonte
+
+```bash
+git clone https://github.com/isaac9711/claude-notify.git
+cd claude-notify
+./build.sh
+```
 
 ## Configuração
 

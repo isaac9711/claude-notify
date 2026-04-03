@@ -27,15 +27,7 @@ Haz clic en una notificacion para navegar a la **ventana y pestana exacta** dond
 
 ## Instalacion
 
-### Opcion 1: Compilar desde el codigo fuente (recomendado)
-
-```bash
-git clone https://github.com/isaac9711/claude-notify.git
-cd claude-notify
-./build.sh
-```
-
-### Opcion 2: Descarga precompilada (DMG)
+### Opcion 1: Descarga precompilada (DMG)
 
 1. Descarga el DMG para tu version de macOS desde [Releases](https://github.com/isaac9711/claude-notify/releases)
 2. Abre el DMG
@@ -43,6 +35,14 @@ cd claude-notify
 4. En el primer inicio, si aparece una advertencia de seguridad, **Clic derecho → Abrir → Abrir** (solo una vez)
 
 > **Consejo:** Alternativamente, ejecuta `xattr -cr /Applications/ClaudeNotify.app` en Terminal para omitir la advertencia de seguridad.
+
+### Opcion 2: Compilar desde el codigo fuente
+
+```bash
+git clone https://github.com/isaac9711/claude-notify.git
+cd claude-notify
+./build.sh
+```
 
 ## Configuracion
 

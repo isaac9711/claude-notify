@@ -27,15 +27,7 @@ Nhấp vào thông báo để điều hướng đến **đúng cửa sổ và ta
 
 ## Cài đặt
 
-### Cách 1: Biên dịch từ mã nguồn (khuyến nghị)
-
-```bash
-git clone https://github.com/isaac9711/claude-notify.git
-cd claude-notify
-./build.sh
-```
-
-### Cách 2: Tải bản dựng sẵn (DMG)
+### Cách 1: Tải bản dựng sẵn (DMG)
 
 1. Tải tệp DMG phù hợp với phiên bản macOS của bạn từ [Releases](https://github.com/isaac9711/claude-notify/releases)
 2. Mở tệp DMG
@@ -43,6 +35,14 @@ cd claude-notify
 4. Khi khởi chạy lần đầu, nếu xuất hiện cảnh báo bảo mật, hãy **Nhấp chuột phải → Open → Open** (chỉ cần một lần)
 
 > **Mẹo:** Hoặc chạy `xattr -cr /Applications/ClaudeNotify.app` trong Terminal để bỏ qua cảnh báo bảo mật.
+
+### Cách 2: Biên dịch từ mã nguồn
+
+```bash
+git clone https://github.com/isaac9711/claude-notify.git
+cd claude-notify
+./build.sh
+```
 
 ## Thiết lập
 

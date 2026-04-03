@@ -27,15 +27,7 @@
 
 ## 安装
 
-### 方式一：源码构建（推荐）
-
-```bash
-git clone https://github.com/isaac9711/claude-notify.git
-cd claude-notify
-./build.sh
-```
-
-### 方式二：预构建下载（DMG）
+### 方式一：预构建下载（DMG）
 
 1. 从 [Releases](https://github.com/isaac9711/claude-notify/releases) 下载适用于您 macOS 版本的 DMG
 2. 打开 DMG
@@ -43,6 +35,14 @@ cd claude-notify
 4. 首次启动时，如果出现安全警告，**右键点击 → 打开 → 打开**（仅需一次）
 
 > **提示：** 您也可以在终端中运行 `xattr -cr /Applications/ClaudeNotify.app` 来跳过安全警告。
+
+### 方式二：源码构建
+
+```bash
+git clone https://github.com/isaac9711/claude-notify.git
+cd claude-notify
+./build.sh
+```
 
 ## 设置
 
