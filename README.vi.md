@@ -44,6 +44,14 @@ cd claude-notify
 ./build.sh
 ```
 
+### Nâng cấp
+
+1. Tải DMG mới (hoặc `git pull && ./build.sh`)
+2. Kéo `ClaudeNotify.app` vào `Applications` và thay thế ứng dụng hiện có
+3. Chuyển đổi ClaudeNotify **OFF → ON** trong Cài đặt Hệ thống > Trợ năng (thay đổi hash nhị phân sẽ vô hiệu hóa quyền)
+
+> Cấu hình hook trong `~/.claude/settings.json` được giữ nguyên — không cần thay đổi.
+
 ## Thiết lập
 
 ### 1. Quyền trên macOS

@@ -44,6 +44,14 @@ cd claude-notify
 ./build.sh
 ```
 
+### アップグレード
+
+1. 新しい DMG をダウンロード（または `git pull && ./build.sh`）
+2. `ClaudeNotify.app` を `Applications` に上書きコピー
+3. システム設定 > アクセシビリティで ClaudeNotify を **OFF → ON** に切り替え（バイナリハッシュの変更により権限が無効化されます）
+
+> `~/.claude/settings.json` の Hook 設定はそのまま保持されます。
+
 ## セットアップ
 
 ### 1. macOSの権限設定
