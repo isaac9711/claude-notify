@@ -85,18 +85,23 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
         let args = ProcessInfo.processInfo.arguments
         guard args.count > 1 else {
-            // First launch / no args: check accessibility and guide user
+            // No args: launched from notification click relaunch, just wait for didReceive
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { NSApp.terminate(nil) }
+            return
+        }
+
+        // --setup: check accessibility and guide user
+        if args.contains("--setup") {
             let trusted = AXIsProcessTrustedWithOptions(
                 [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): false] as CFDictionary
             )
             if !trusted {
-                // Open Accessibility settings
                 NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
                 fputs("Accessibility permission required. Please add ClaudeNotify in the opened settings.\n", stderr)
             } else {
                 fputs("Accessibility permission already granted.\n", stderr)
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { NSApp.terminate(nil) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { NSApp.terminate(nil) }
             return
         }
 
@@ -189,10 +194,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
         if !bundleId.isEmpty {
             if !session.isEmpty && session.hasPrefix("/dev/") {
-                // macOS Terminal: use osascript process to find and select tab by tty
+                // macOS Terminal: activate app via open -b, then select tab via AppleScript
+                let activate = Process()
+                activate.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+                activate.arguments = ["-b", bundleId]
+                try? activate.run()
+                activate.waitUntilExit()
+
                 let script = """
                 tell application "Terminal"
-                    activate
                     repeat with w in windows
                         repeat with t in tabs of w
                             if tty of t is "\(session)" then
@@ -210,11 +220,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                 try? task.run()
                 task.waitUntilExit()
             } else if !session.isEmpty && session.contains(":") {
-                // iTerm: find session by GUID
+                // iTerm: activate app via open -b, then select tab via AppleScript
+                let activate = Process()
+                activate.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+                activate.arguments = ["-b", bundleId]
+                try? activate.run()
+                activate.waitUntilExit()
+
                 let guid = String(session.split(separator: ":").last ?? "")
                 let script = """
                 tell application "iTerm2"
-                    activate
                     repeat with w in windows
                         repeat with t in tabs of w
                             repeat with s in sessions of t
