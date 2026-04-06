@@ -348,6 +348,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                 """
                 var errorInfo: NSDictionary?
                 NSAppleScript(source: script)?.executeAndReturnError(&errorInfo)
+            } else if session == "activate-only" {
+                // Warp and other terminals without AppleScript: just activate app
+                let task = Process()
+                task.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+                task.arguments = ["-b", bundleId]
+                try? task.run()
+                task.waitUntilExit()
             } else if !workspace.isEmpty {
                 // Cursor/VS Code: open workspace path
                 let task = Process()
@@ -356,7 +363,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                 try? task.run()
                 task.waitUntilExit()
             } else {
-                // Warp and others: just activate app
+                // Others: just activate app
                 let task = Process()
                 task.executableURL = URL(fileURLWithPath: "/usr/bin/open")
                 task.arguments = ["-b", bundleId]
