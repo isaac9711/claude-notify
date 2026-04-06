@@ -12,12 +12,13 @@ Clique em uma notificação para navegar até a **janela e aba exatas** onde o C
 - Ícone do aplicativo de origem + nome do projeto exibidos na notificação
 - Navegação por clique até a janela/aba exata:
 
-| Ambiente | Notificação | Navegação por Clique | Método |
-|-------------|:----:|:----------:|--------|
-| iTerm | O | Janela + Aba | Session GUID |
-| Cursor | O | Janela do Projeto | Workspace path |
-| VS Code | O | Janela do Projeto | Workspace path |
-| macOS Terminal | O | Janela + Aba | TTY path |
+| Ambiente | Notificação | Navegação ao clicar | Fullscreen Space | Método |
+|----------|:----:|:----------:|:----------:|--------|
+| iTerm | O | Janela + Aba | O | Session GUID + SkyLight API |
+| Cursor | O | Janela do projeto | O | Workspace path + SkyLight API |
+| VS Code | O | Janela do projeto | O | Workspace path + SkyLight API |
+| macOS Terminal | O | Janela + Aba | O | TTY path + SkyLight API |
+| Warp | O | Ativar aplicativo | X | open -b (limitação de app Rust) |
 
 ## Requisitos
 
@@ -183,6 +184,7 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
 | `-activate` | Bundle ID do aplicativo a ser ativado ao clicar | `com.googlecode.iterm2` |
 | `-workspace` | Caminho do projeto (para Cursor/VS Code) | `/Users/me/project` |
 | `-session` | Identificador de sessao (para iTerm/Terminal) | `w0t1p0:GUID` ou `/dev/ttys001` |
+| `-windowId` | CGWindowID:PID para troca de Space em tela cheia | `1181:31031` |
 
 ## Solucao de Problemas
 
@@ -200,6 +202,11 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
 ### Navegacao por aba do Terminal nao funciona
 - Verifique em Ajustes do Sistema > Automacao > ClaudeNotify se o Terminal esta habilitado
 - Se nao estiver: `open /Applications/ClaudeNotify.app --args --setup-terminal`
+
+### Warp: troca de Space em tela cheia não suportada
+- Warp é um aplicativo baseado em Rust que não responde à API privada SkyLight do macOS
+- Clicar na notificação ativará o Warp, mas não poderá alternar para o Space em tela cheia
+- Solução: use modo janela ou maximize (Option+botão verde) em vez de tela cheia
 
 ### Notificacao do VS Code navega para aba do iTerm
 - Causado pela variavel de ambiente `ITERM_SESSION_ID` vazando para o terminal do VS Code
@@ -220,8 +227,9 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
 ```
 
 **Stack Tecnologica:**
-- Swift + Cocoa + UserNotifications + ApplicationServices
+- Swift + Cocoa + UserNotifications + ApplicationServices + SkyLight
 - UNUserNotificationCenter (API moderna de notificacoes)
+- SkyLight private API (`_SLPSSetFrontProcessWithOptions`) for fullscreen Space switching
 - Accessibility API (AXUIElement) para deteccao de janelas
 - AppleScript (NSAppleScript) para controle de abas do iTerm/Terminal
 - Assinatura de codigo com hardened runtime + entitlement de Apple Events

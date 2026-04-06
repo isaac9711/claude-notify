@@ -12,12 +12,13 @@ Click a notification to navigate to the **exact window and tab** where Claude Co
 - Source app icon + project name displayed in notification
 - Click-to-navigate to the exact window/tab:
 
-| Environment | Notification | Click Navigation | Method |
-|-------------|:----:|:----------:|--------|
-| iTerm | O | Window + Tab | Session GUID |
-| Cursor | O | Project Window | Workspace path |
-| VS Code | O | Project Window | Workspace path |
-| macOS Terminal | O | Window + Tab | TTY path |
+| Environment | Notification | Click Navigation | Fullscreen Space | Method |
+|-------------|:----:|:----------:|:----------:|--------|
+| iTerm | O | Window + Tab | O | Session GUID + SkyLight API |
+| Cursor | O | Project Window | O | Workspace path + SkyLight API |
+| VS Code | O | Project Window | O | Workspace path + SkyLight API |
+| macOS Terminal | O | Window + Tab | O | TTY path + SkyLight API |
+| Warp | O | App Activate | X | open -b (Rust app limitation) |
 
 ## Requirements
 
@@ -183,6 +184,7 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
 | `-activate` | Bundle ID of app to activate on click | `com.googlecode.iterm2` |
 | `-workspace` | Project path (for Cursor/VS Code) | `/Users/me/project` |
 | `-session` | Session identifier (for iTerm/Terminal) | `w0t1p0:GUID` or `/dev/ttys001` |
+| `-windowId` | CGWindowID:PID for fullscreen Space switching | `1181:31031` |
 
 ## Troubleshooting
 
@@ -200,6 +202,11 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
 ### Terminal tab navigation not working
 - Check System Settings > Automation > ClaudeNotify has Terminal enabled
 - If not: `open /Applications/ClaudeNotify.app --args --setup-terminal`
+
+### Warp: fullscreen Space switching not working
+- Warp is a Rust-based app that doesn't respond to macOS SkyLight private API
+- Notification click will activate Warp but cannot switch to a fullscreen Space
+- Workaround: use windowed mode or maximize (Option+Green button) instead of fullscreen
 
 ### VS Code notification navigates to iTerm tab
 - Caused by `ITERM_SESSION_ID` env var leaking into VS Code terminal
@@ -220,8 +227,9 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
 ```
 
 **Tech Stack:**
-- Swift + Cocoa + UserNotifications + ApplicationServices
+- Swift + Cocoa + UserNotifications + ApplicationServices + SkyLight
 - UNUserNotificationCenter (modern notification API)
+- SkyLight private API (`_SLPSSetFrontProcessWithOptions`) for fullscreen Space switching
 - Accessibility API (AXUIElement) for window detection
 - AppleScript (NSAppleScript) for iTerm/Terminal tab control
 - Code signed with hardened runtime + Apple Events entitlement

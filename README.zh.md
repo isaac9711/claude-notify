@@ -12,12 +12,13 @@
 - 通知中显示源应用图标和项目名称
 - 点击即可导航到精确的窗口/标签页：
 
-| 环境 | 通知 | 点击导航 | 方式 |
-|------|:----:|:--------:|------|
-| iTerm | O | 窗口 + 标签页 | Session GUID |
-| Cursor | O | 项目窗口 | 工作区路径 |
-| VS Code | O | 项目窗口 | 工作区路径 |
-| macOS Terminal | O | 窗口 + 标签页 | TTY 路径 |
+| 环境 | 通知 | 点击导航 | 全屏 Space | 方式 |
+|------|:----:|:------:|:----------:|------|
+| iTerm | O | 窗口 + 标签页 | O | Session GUID + SkyLight API |
+| Cursor | O | 项目窗口 | O | Workspace path + SkyLight API |
+| VS Code | O | 项目窗口 | O | Workspace path + SkyLight API |
+| macOS Terminal | O | 窗口 + 标签页 | O | TTY path + SkyLight API |
+| Warp | O | 应用激活 | X | open -b (Rust 应用限制) |
 
 ## 系统要求
 
@@ -183,6 +184,7 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
 | `-activate` | 点击时激活的应用 Bundle ID | `com.googlecode.iterm2` |
 | `-workspace` | 项目路径（用于 Cursor/VS Code） | `/Users/me/project` |
 | `-session` | 会话标识符（用于 iTerm/Terminal） | `w0t1p0:GUID` 或 `/dev/ttys001` |
+| `-windowId` | 用于全屏 Space 切换的 CGWindowID:PID | `1181:31031` |
 
 ## 故障排除
 
@@ -200,6 +202,11 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
 ### Terminal 标签页导航不工作
 - 检查系统设置 > 自动化 > ClaudeNotify 是否已启用 Terminal
 - 如果没有：`open /Applications/ClaudeNotify.app --args --setup-terminal`
+
+### Warp：不支持全屏 Space 切换
+- Warp 是基于 Rust 的应用，不响应 macOS SkyLight 私有 API
+- 点击通知会激活 Warp，但无法切换到全屏 Space
+- 解决方法：使用窗口模式或最大化（Option+绿色按钮）代替全屏
 
 ### VS Code 通知导航到了 iTerm 标签页
 - 原因是 `ITERM_SESSION_ID` 环境变量泄漏到了 VS Code 终端中
@@ -220,8 +227,9 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
 ```
 
 **技术栈：**
-- Swift + Cocoa + UserNotifications + ApplicationServices
+- Swift + Cocoa + UserNotifications + ApplicationServices + SkyLight
 - UNUserNotificationCenter（现代通知 API）
+- SkyLight private API (`_SLPSSetFrontProcessWithOptions`) for fullscreen Space switching
 - Accessibility API (AXUIElement) 用于窗口检测
 - AppleScript (NSAppleScript) 用于 iTerm/Terminal 标签页控制
 - 使用 hardened runtime + Apple Events entitlement 进行代码签名

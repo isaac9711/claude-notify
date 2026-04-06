@@ -12,12 +12,13 @@ Nhấp vào thông báo để điều hướng đến **đúng cửa sổ và ta
 - Hiển thị biểu tượng ứng dụng nguồn + tên dự án trong thông báo
 - Nhấp để điều hướng đến đúng cửa sổ/tab:
 
-| Môi trường | Thông báo | Điều hướng khi nhấp | Phương thức |
-|-------------|:----:|:----------:|--------|
-| iTerm | O | Cửa sổ + Tab | Session GUID |
-| Cursor | O | Cửa sổ dự án | Workspace path |
-| VS Code | O | Cửa sổ dự án | Workspace path |
-| macOS Terminal | O | Cửa sổ + Tab | TTY path |
+| Môi trường | Thông báo | Điều hướng khi nhấp | Fullscreen Space | Phương thức |
+|------------|:----:|:----------:|:----------:|--------|
+| iTerm | O | Cửa sổ + Tab | O | Session GUID + SkyLight API |
+| Cursor | O | Cửa sổ dự án | O | Workspace path + SkyLight API |
+| VS Code | O | Cửa sổ dự án | O | Workspace path + SkyLight API |
+| macOS Terminal | O | Cửa sổ + Tab | O | TTY path + SkyLight API |
+| Warp | O | Kích hoạt ứng dụng | X | open -b (giới hạn ứng dụng Rust) |
 
 ## Yêu cầu
 
@@ -183,6 +184,7 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
 | `-activate` | Bundle ID của ứng dụng cần kích hoạt khi nhấp | `com.googlecode.iterm2` |
 | `-workspace` | Đường dẫn dự án (cho Cursor/VS Code) | `/Users/me/project` |
 | `-session` | Mã phiên (cho iTerm/Terminal) | `w0t1p0:GUID` hoặc `/dev/ttys001` |
+| `-windowId` | CGWindowID:PID để chuyển đổi fullscreen Space | `1181:31031` |
 
 ## Xử lý sự cố
 
@@ -200,6 +202,11 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
 ### Điều hướng tab Terminal không hoạt động
 - Kiểm tra System Settings > Automation > ClaudeNotify đã bật Terminal
 - Nếu chưa: `open /Applications/ClaudeNotify.app --args --setup-terminal`
+
+### Warp: không hỗ trợ chuyển đổi fullscreen Space
+- Warp là ứng dụng dựa trên Rust, không phản hồi SkyLight private API của macOS
+- Nhấp vào thông báo sẽ kích hoạt Warp nhưng không thể chuyển đổi sang fullscreen Space
+- Giải pháp: sử dụng chế độ cửa sổ hoặc phóng to (Option+nút xanh) thay vì fullscreen
 
 ### Thông báo VS Code điều hướng đến tab iTerm
 - Nguyên nhân do biến môi trường `ITERM_SESSION_ID` bị rò rỉ vào terminal của VS Code
@@ -220,8 +227,9 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
 ```
 
 **Công nghệ sử dụng:**
-- Swift + Cocoa + UserNotifications + ApplicationServices
+- Swift + Cocoa + UserNotifications + ApplicationServices + SkyLight
 - UNUserNotificationCenter (API thông báo hiện đại)
+- SkyLight private API (`_SLPSSetFrontProcessWithOptions`) for fullscreen Space switching
 - Accessibility API (AXUIElement) để phát hiện cửa sổ
 - AppleScript (NSAppleScript) để điều khiển tab iTerm/Terminal
 - Ký mã với hardened runtime + quyền Apple Events

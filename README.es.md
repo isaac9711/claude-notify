@@ -12,12 +12,13 @@ Haz clic en una notificacion para navegar a la **ventana y pestana exacta** dond
 - Icono de la aplicacion de origen + nombre del proyecto mostrados en la notificacion
 - Navegacion al hacer clic a la ventana/pestana exacta:
 
-| Entorno | Notificacion | Navegacion al hacer clic | Metodo |
-|-------------|:----:|:----------:|--------|
-| iTerm | O | Ventana + Pestana | Session GUID |
-| Cursor | O | Ventana del proyecto | Ruta del workspace |
-| VS Code | O | Ventana del proyecto | Ruta del workspace |
-| macOS Terminal | O | Ventana + Pestana | Ruta TTY |
+| Entorno | Notificación | Navegación al clic | Pantalla completa Space | Método |
+|---------|:----:|:----------:|:----------:|--------|
+| iTerm | O | Ventana + Pestaña | O | Session GUID + SkyLight API |
+| Cursor | O | Ventana del proyecto | O | Workspace path + SkyLight API |
+| VS Code | O | Ventana del proyecto | O | Workspace path + SkyLight API |
+| macOS Terminal | O | Ventana + Pestaña | O | TTY path + SkyLight API |
+| Warp | O | Activar aplicación | X | open -b (limitación de app Rust) |
 
 ## Requisitos
 
@@ -183,6 +184,7 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
 | `-activate` | Bundle ID de la aplicacion a activar al hacer clic | `com.googlecode.iterm2` |
 | `-workspace` | Ruta del proyecto (para Cursor/VS Code) | `/Users/me/project` |
 | `-session` | Identificador de sesion (para iTerm/Terminal) | `w0t1p0:GUID` o `/dev/ttys001` |
+| `-windowId` | CGWindowID:PID para cambio de Space en pantalla completa | `1181:31031` |
 
 ## Solucion de problemas
 
@@ -200,6 +202,11 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
 ### La navegacion de pestanas de Terminal no funciona
 - Verifica en Ajustes del Sistema > Automatizacion > ClaudeNotify que Terminal este habilitado
 - Si no lo esta: `open /Applications/ClaudeNotify.app --args --setup-terminal`
+
+### Warp: cambio de Space en pantalla completa no soportado
+- Warp es una aplicación basada en Rust que no responde a la API privada SkyLight de macOS
+- Al hacer clic en la notificación se activará Warp pero no podrá cambiar al Space en pantalla completa
+- Solución: usa modo ventana o maximiza (Option+botón verde) en lugar de pantalla completa
 
 ### La notificacion de VS Code navega a una pestana de iTerm
 - Causado por la variable de entorno `ITERM_SESSION_ID` que se filtra al terminal de VS Code
@@ -220,8 +227,9 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
 ```
 
 **Stack tecnologico:**
-- Swift + Cocoa + UserNotifications + ApplicationServices
+- Swift + Cocoa + UserNotifications + ApplicationServices + SkyLight
 - UNUserNotificationCenter (API moderna de notificaciones)
+- SkyLight private API (`_SLPSSetFrontProcessWithOptions`) for fullscreen Space switching
 - Accessibility API (AXUIElement) para deteccion de ventanas
 - AppleScript (NSAppleScript) para control de pestanas en iTerm/Terminal
 - Firmado con hardened runtime + entitlement de Apple Events
