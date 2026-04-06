@@ -2,6 +2,61 @@ import Cocoa
 import UserNotifications
 import ApplicationServices
 
+// MARK: - Private API Declarations
+
+// SkyLight/CGS private APIs for window activation with Space switching
+@_silgen_name("_SLPSSetFrontProcessWithOptions")
+@discardableResult
+func _SLPSSetFrontProcessWithOptions(
+    _ psn: UnsafeMutablePointer<ProcessSerialNumber>,
+    _ wid: CGWindowID,
+    _ mode: UInt32
+) -> CGError
+
+@_silgen_name("SLPSPostEventRecordTo")
+@discardableResult
+func SLPSPostEventRecordTo(
+    _ psn: UnsafeMutablePointer<ProcessSerialNumber>,
+    _ bytes: UnsafeMutablePointer<UInt8>
+) -> CGError
+
+@_silgen_name("GetProcessForPID")
+@discardableResult
+func GetProcessForPID(_ pid: pid_t, _ psn: UnsafeMutablePointer<ProcessSerialNumber>) -> OSStatus
+
+// Get CGWindowID from AXUIElement
+@_silgen_name("_AXUIElementGetWindow")
+@discardableResult
+func _AXUIElementGetWindow(_ element: AXUIElement, _ windowID: inout CGWindowID) -> AXError
+
+// MARK: - Window Activation (handles fullscreen Space switching)
+
+func activateWindow(windowID: CGWindowID, pid: pid_t) {
+    var psn = ProcessSerialNumber()
+    let psnResult = GetProcessForPID(pid, &psn)
+
+    if psnResult == noErr {
+        // Activate process targeting specific window — macOS auto-switches Space
+        _SLPSSetFrontProcessWithOptions(&psn, windowID, 0x200)
+
+        // Send synthetic key-window events
+        var bytes = [UInt8](repeating: 0, count: 0xf8)
+        bytes[0x04] = 0xf8
+        bytes[0x3a] = 0x10
+        var wid = windowID
+        memcpy(&bytes[0x3c], &wid, MemoryLayout<UInt32>.size)
+        memset(&bytes[0x20], 0xff, 0x10)
+
+        bytes[0x08] = 0x01  // key down
+        SLPSPostEventRecordTo(&psn, &bytes)
+        bytes[0x08] = 0x02  // key up
+        SLPSPostEventRecordTo(&psn, &bytes)
+    }
+
+}
+
+// MARK: - Helper Functions
+
 func getFrontWindowTitle(bundleId: String) -> String {
     guard let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundleId).first else { return "" }
     let axApp = AXUIElementCreateApplication(app.processIdentifier)
@@ -17,7 +72,60 @@ func getFrontWindowTitle(bundleId: String) -> String {
     return ""
 }
 
-// Raise terminal mode: activate Terminal and select tab by tty
+func getFrontWindowID(bundleId: String) -> (windowID: CGWindowID, pid: pid_t)? {
+    guard let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundleId).first else { return nil }
+    let pid = app.processIdentifier
+
+    // Try AXUIElement first
+    let axApp = AXUIElementCreateApplication(pid)
+    var focusedWindow: CFTypeRef?
+    AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &focusedWindow)
+
+    if let window = focusedWindow {
+        var windowID: CGWindowID = 0
+        if _AXUIElementGetWindow(window as! AXUIElement, &windowID) == .success, windowID != 0 {
+            return (windowID, pid)
+        }
+    }
+
+    // Fallback: CGWindowList (for apps like Warp that don't expose AX window IDs)
+    guard let windowList = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] else { return nil }
+
+    for window in windowList {
+        if let ownerPID = window[kCGWindowOwnerPID as String] as? Int32,
+           ownerPID == pid,
+           let layer = window[kCGWindowLayer as String] as? Int, layer == 0,
+           let windowNumber = window[kCGWindowNumber as String] as? CGWindowID {
+            return (windowNumber, pid)
+        }
+    }
+    return nil
+}
+
+// MARK: - CLI Modes
+
+// Get focused window ID: outputs "windowID:pid"
+if CommandLine.arguments.contains("--get-window-id") {
+    if let idx = CommandLine.arguments.firstIndex(of: "--get-window-id"),
+       idx + 1 < CommandLine.arguments.count {
+        let bundleId = CommandLine.arguments[idx + 1]
+        if let info = getFrontWindowID(bundleId: bundleId) {
+            print("\(info.windowID):\(info.pid)")
+        }
+    }
+    exit(0)
+}
+
+// Get focused window title
+if CommandLine.arguments.contains("--get-window-title") {
+    if let idx = CommandLine.arguments.firstIndex(of: "--get-window-title"),
+       idx + 1 < CommandLine.arguments.count {
+        print(getFrontWindowTitle(bundleId: CommandLine.arguments[idx + 1]))
+    }
+    exit(0)
+}
+
+// Raise terminal tab by tty
 if CommandLine.arguments.contains("--raise-terminal") {
     if let idx = CommandLine.arguments.firstIndex(of: "--raise-terminal"),
        idx + 1 < CommandLine.arguments.count {
@@ -48,7 +156,7 @@ if CommandLine.arguments.contains("--raise-terminal") {
     exit(0)
 }
 
-// Setup mode: request automation permissions (must run via `open` command)
+// Setup: request Terminal automation permission
 if CommandLine.arguments.contains("--setup-terminal") {
     let app = NSApplication.shared
     app.setActivationPolicy(.regular)
@@ -67,14 +175,21 @@ if CommandLine.arguments.contains("--setup-terminal") {
     exit(0)
 }
 
-// Quick-query mode: output window title and exit without starting GUI
-if CommandLine.arguments.contains("--get-window-title") {
-    if let idx = CommandLine.arguments.firstIndex(of: "--get-window-title"),
-       idx + 1 < CommandLine.arguments.count {
-        print(getFrontWindowTitle(bundleId: CommandLine.arguments[idx + 1]))
+// Setup: check accessibility permission
+if CommandLine.arguments.contains("--setup") {
+    let trusted = AXIsProcessTrustedWithOptions(
+        [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): false] as CFDictionary
+    )
+    if !trusted {
+        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
+        fputs("Accessibility permission required. Please add ClaudeNotify in the opened settings.\n", stderr)
+    } else {
+        fputs("Accessibility permission already granted.\n", stderr)
     }
     exit(0)
 }
+
+// MARK: - App Delegate
 
 class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
     var activateBundleId = ""
@@ -90,26 +205,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             return
         }
 
-        // --setup: check accessibility and guide user
-        if args.contains("--setup") {
-            let trusted = AXIsProcessTrustedWithOptions(
-                [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): false] as CFDictionary
-            )
-            if !trusted {
-                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
-                fputs("Accessibility permission required. Please add ClaudeNotify in the opened settings.\n", stderr)
-            } else {
-                fputs("Accessibility permission already granted.\n", stderr)
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { NSApp.terminate(nil) }
-            return
-        }
-
         var title = "Claude Code"
         var message = ""
         var sound = "default"
         var workspace = ""
         var session = ""
+        var windowId = ""
 
         var i = 1
         while i < args.count {
@@ -120,6 +221,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             case "-activate":  i += 1; if i < args.count { activateBundleId = args[i] }
             case "-workspace": i += 1; if i < args.count { workspace = args[i] }
             case "-session":   i += 1; if i < args.count { session = args[i] }
+            case "-windowId":  i += 1; if i < args.count { windowId = args[i] }
             default: break
             }
             i += 1
@@ -139,16 +241,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             content.userInfo = [
                 "activateBundle": self.activateBundleId,
                 "workspace": workspace,
-                "session": session
+                "session": session,
+                "windowId": windowId
             ]
 
-            // Set subtitle to source app name
+            // Set subtitle to source app name + attach icon
             if !self.activateBundleId.isEmpty,
                let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: self.activateBundleId) {
                 let appName = appURL.deletingPathExtension().lastPathComponent
                 content.subtitle = appName
 
-                // Attach source app icon
                 let icon = NSWorkspace.shared.icon(forFile: appURL.path)
                 let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("claude-notify-icon-\(UUID().uuidString).png")
                 if let tiffData = icon.tiffRepresentation,
@@ -191,16 +293,23 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         let bundleId = userInfo["activateBundle"] as? String ?? ""
         let workspace = userInfo["workspace"] as? String ?? ""
         let session = userInfo["session"] as? String ?? ""
+        let windowIdStr = userInfo["windowId"] as? String ?? ""
 
         if !bundleId.isEmpty {
-            if !session.isEmpty && session.hasPrefix("/dev/") {
-                // macOS Terminal: activate app via open -b, then select tab via AppleScript
-                let activate = Process()
-                activate.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-                activate.arguments = ["-b", bundleId]
-                try? activate.run()
-                activate.waitUntilExit()
+            // Step 1: Try Space switching via private API (works for Cocoa native apps)
+            if !windowIdStr.isEmpty {
+                let parts = windowIdStr.split(separator: ":")
+                if parts.count == 2,
+                   let wid = UInt32(parts[0]),
+                   let pid = Int32(parts[1]) {
+                    activateWindow(windowID: CGWindowID(wid), pid: pid)
+                    usleep(200000)
+                }
+            }
 
+            // Step 2: App-specific activation (always runs)
+            if !session.isEmpty && session.hasPrefix("/dev/") {
+                // macOS Terminal: select tab by tty
                 let script = """
                 tell application "Terminal"
                     repeat with w in windows
@@ -219,14 +328,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                 task.arguments = ["-e", script]
                 try? task.run()
                 task.waitUntilExit()
-            } else if !session.isEmpty && session.contains(":") {
-                // iTerm: activate app via open -b, then select tab via AppleScript
-                let activate = Process()
-                activate.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-                activate.arguments = ["-b", bundleId]
-                try? activate.run()
-                activate.waitUntilExit()
-
+            } else if !session.isEmpty && session.contains(":") && !session.hasPrefix("/") {
+                // iTerm: select tab by session GUID
                 let guid = String(session.split(separator: ":").last ?? "")
                 let script = """
                 tell application "iTerm2"
@@ -245,22 +348,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                 """
                 var errorInfo: NSDictionary?
                 NSAppleScript(source: script)?.executeAndReturnError(&errorInfo)
-                if errorInfo != nil {
-                    let fallback = Process()
-                    fallback.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-                    fallback.arguments = ["-b", bundleId]
-                    try? fallback.run()
-                    fallback.waitUntilExit()
-                }
-            } else {
-                // Other apps: open workspace path
+            } else if !workspace.isEmpty {
+                // Cursor/VS Code: open workspace path
                 let task = Process()
                 task.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-                if !workspace.isEmpty {
-                    task.arguments = ["-b", bundleId, workspace]
-                } else {
-                    task.arguments = ["-b", bundleId]
-                }
+                task.arguments = ["-b", bundleId, workspace]
+                try? task.run()
+                task.waitUntilExit()
+            } else {
+                // Warp and others: just activate app
+                let task = Process()
+                task.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+                task.arguments = ["-b", bundleId]
                 try? task.run()
                 task.waitUntilExit()
             }

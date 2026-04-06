@@ -31,7 +31,9 @@ swiftc "${SCRIPT_DIR}/ClaudeNotify.swift" \
     -target arm64-apple-macosx${MIN_MACOS} \
     -framework Cocoa \
     -framework UserNotifications \
-    -framework ApplicationServices
+    -framework ApplicationServices \
+    -F /System/Library/PrivateFrameworks \
+    -framework SkyLight
 
 # Compile for Intel
 swiftc "${SCRIPT_DIR}/ClaudeNotify.swift" \
@@ -39,7 +41,9 @@ swiftc "${SCRIPT_DIR}/ClaudeNotify.swift" \
     -target x86_64-apple-macosx${MIN_MACOS} \
     -framework Cocoa \
     -framework UserNotifications \
-    -framework ApplicationServices
+    -framework ApplicationServices \
+    -F /System/Library/PrivateFrameworks \
+    -framework SkyLight
 
 # Create universal binary
 lipo -create \
