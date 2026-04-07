@@ -47,9 +47,11 @@ echo "Copying Sparkle.framework..."
 rm -rf "${FRAMEWORKS_DIR}/Sparkle.framework"
 cp -R "${SPARKLE_FW}" "${FRAMEWORKS_DIR}/"
 
-# Code sign (frameworks first, then app bundle)
+# Code sign (inside-out: XPC services → framework → app bundle)
 echo "Code signing..."
-codesign --force --deep --sign - "${FRAMEWORKS_DIR}/Sparkle.framework"
+codesign --force --sign - "${FRAMEWORKS_DIR}/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc"
+codesign --force --sign - "${FRAMEWORKS_DIR}/Sparkle.framework/Versions/B/XPCServices/Installer.xpc"
+codesign --force --sign - "${FRAMEWORKS_DIR}/Sparkle.framework"
 codesign --force --sign - --options runtime \
     --entitlements "${SCRIPT_DIR}/Resources/ClaudeNotify.entitlements" \
     "${APP_DIR}"
