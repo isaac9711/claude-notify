@@ -6,55 +6,52 @@ APP_DIR="/Applications/${APP_NAME}.app"
 CONTENTS_DIR="${APP_DIR}/Contents"
 MACOS_DIR="${CONTENTS_DIR}/MacOS"
 RESOURCES_DIR="${CONTENTS_DIR}/Resources"
+FRAMEWORKS_DIR="${CONTENTS_DIR}/Frameworks"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-echo "Building ${APP_NAME}...
-Usage: ./build.sh [macOS version]  (default: 14.0)
-  ./build.sh 14.0   # macOS 14 Sonoma+
-  ./build.sh 15.0   # macOS 15 Sequoia+
-"
+echo "Building ${APP_NAME} (SPM + Sparkle)..."
+echo ""
+
+# Resolve dependencies
+echo "Resolving dependencies..."
+swift package resolve --package-path "${SCRIPT_DIR}"
+
+# Build for Apple Silicon
+echo "Building for arm64..."
+swift build -c release --arch arm64 --package-path "${SCRIPT_DIR}"
+
+# Build for Intel
+echo "Building for x86_64..."
+swift build -c release --arch x86_64 --package-path "${SCRIPT_DIR}"
 
 # Create app bundle structure
-mkdir -p "${MACOS_DIR}" "${RESOURCES_DIR}"
-
-# Copy Info.plist and icon
-cp "${SCRIPT_DIR}/Info.plist" "${CONTENTS_DIR}/"
-cp "${SCRIPT_DIR}/AppIcon.icns" "${RESOURCES_DIR}/"
-
-# Determine deployment target
-MIN_MACOS="${1:-14.0}"
-echo "Target: macOS ${MIN_MACOS}+ (universal binary)"
-
-# Compile for Apple Silicon
-swiftc "${SCRIPT_DIR}/ClaudeNotify.swift" \
-    -o "${MACOS_DIR}/${APP_NAME}-arm64" \
-    -target arm64-apple-macosx${MIN_MACOS} \
-    -framework Cocoa \
-    -framework UserNotifications \
-    -framework ApplicationServices \
-    -F /System/Library/PrivateFrameworks \
-    -framework SkyLight
-
-# Compile for Intel
-swiftc "${SCRIPT_DIR}/ClaudeNotify.swift" \
-    -o "${MACOS_DIR}/${APP_NAME}-x86_64" \
-    -target x86_64-apple-macosx${MIN_MACOS} \
-    -framework Cocoa \
-    -framework UserNotifications \
-    -framework ApplicationServices \
-    -F /System/Library/PrivateFrameworks \
-    -framework SkyLight
+mkdir -p "${MACOS_DIR}" "${RESOURCES_DIR}" "${FRAMEWORKS_DIR}"
 
 # Create universal binary
-lipo -create \
-    "${MACOS_DIR}/${APP_NAME}-arm64" \
-    "${MACOS_DIR}/${APP_NAME}-x86_64" \
-    -output "${MACOS_DIR}/${APP_NAME}"
-rm "${MACOS_DIR}/${APP_NAME}-arm64" "${MACOS_DIR}/${APP_NAME}-x86_64"
+ARM64_BIN="${SCRIPT_DIR}/.build/arm64-apple-macosx/release/${APP_NAME}"
+X86_BIN="${SCRIPT_DIR}/.build/x86_64-apple-macosx/release/${APP_NAME}"
+echo "Creating universal binary..."
+lipo -create "${ARM64_BIN}" "${X86_BIN}" -output "${MACOS_DIR}/${APP_NAME}"
 
-# Code sign
+# Copy resources
+cp "${SCRIPT_DIR}/Resources/Info.plist" "${CONTENTS_DIR}/"
+cp "${SCRIPT_DIR}/Resources/AppIcon.icns" "${RESOURCES_DIR}/"
+
+# Copy Sparkle.framework from SPM artifacts
+SPARKLE_FW=$(find "${SCRIPT_DIR}/.build/artifacts" -name "Sparkle.framework" -path "*/macos-*" | head -1)
+if [ -z "${SPARKLE_FW}" ]; then
+    echo "Error: Sparkle.framework not found in .build/artifacts/"
+    exit 1
+fi
+echo "Copying Sparkle.framework..."
+rm -rf "${FRAMEWORKS_DIR}/Sparkle.framework"
+cp -R "${SPARKLE_FW}" "${FRAMEWORKS_DIR}/"
+
+# Code sign (frameworks first, then app bundle)
+echo "Code signing..."
+codesign --force --deep --sign - "${FRAMEWORKS_DIR}/Sparkle.framework"
 codesign --force --sign - --options runtime \
-    --entitlements "${SCRIPT_DIR}/ClaudeNotify.entitlements" \
+    --entitlements "${SCRIPT_DIR}/Resources/ClaudeNotify.entitlements" \
     "${APP_DIR}"
 
 # Register with LaunchServices
