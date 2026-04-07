@@ -37,6 +37,11 @@ lipo -create "${ARM64_BIN}" "${X86_BIN}" -output "${MACOS_DIR}/${APP_NAME}"
 cp "${SCRIPT_DIR}/Resources/Info.plist" "${CONTENTS_DIR}/"
 cp "${SCRIPT_DIR}/Resources/AppIcon.icns" "${RESOURCES_DIR}/"
 
+# Create .lproj directories for supported languages (enables Sparkle localization)
+for lang in en ko zh-Hans ja es vi pt-BR; do
+    mkdir -p "${RESOURCES_DIR}/${lang}.lproj"
+done
+
 # Copy Sparkle.framework from SPM artifacts
 SPARKLE_FW=$(find "${SCRIPT_DIR}/.build/artifacts" -name "Sparkle.framework" -path "*/macos-*" | head -1)
 if [ -z "${SPARKLE_FW}" ]; then
