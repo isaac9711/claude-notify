@@ -27,6 +27,54 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             let payload = NotificationPayload.fromArgs(args)
             sendNotification(payload)
         }
+
+        // First launch: prompt to select settings.json and install hooks
+        // Or: after update, check if hooks need updating
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            self.checkHookSetup()
+        }
+    }
+
+    private func checkHookSetup() {
+        let hook = HookManager.shared
+
+        if !hook.isConfigured {
+            // First launch — ask to install hooks
+            let alert = NSAlert()
+            alert.messageText = "ClaudeNotify"
+            alert.informativeText = L10n.get("setupHooksPrompt")
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: L10n.get("install"))
+            alert.addButton(withTitle: L10n.get("skip"))
+            if alert.runModal() == .alertFirstButtonReturn {
+                if hook.selectSettingsFile() {
+                    let result = hook.installHooks()
+                    showHookResult(result.message)
+                }
+            }
+        } else if hook.needsHookUpdate {
+            // App updated, hooks need refresh
+            let alert = NSAlert()
+            alert.messageText = "ClaudeNotify"
+            alert.informativeText = L10n.get("hookUpdateAvailable")
+            alert.alertStyle = .informational
+            alert.addButton(withTitle: L10n.get("update"))
+            alert.addButton(withTitle: L10n.get("skip"))
+            if alert.runModal() == .alertFirstButtonReturn {
+                let result = hook.installHooks()
+                showHookResult(result.message)
+            }
+        }
+        rebuildMenu()
+    }
+
+    private func showHookResult(_ message: String) {
+        let alert = NSAlert()
+        alert.messageText = "ClaudeNotify"
+        alert.informativeText = message
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
     }
 
     // MARK: - Menu Bar
@@ -91,6 +139,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         autoUpdateItem.target = self
         autoUpdateItem.state = updaterController?.updater.automaticallyChecksForUpdates == true ? .on : .off
         settingsMenu.addItem(autoUpdateItem)
+
+        // Hooks submenu
+        settingsMenu.addItem(.separator())
+        let hookItem = NSMenuItem(title: L10n.get("hooks"), action: nil, keyEquivalent: "")
+        let hookMenu = NSMenu()
+        let hook = HookManager.shared
+        if hook.hasHooksInstalled() {
+            let uninstallItem = NSMenuItem(title: L10n.get("uninstallHooks"), action: #selector(uninstallHooksAction), keyEquivalent: "")
+            uninstallItem.target = self
+            hookMenu.addItem(uninstallItem)
+        } else {
+            let installItem = NSMenuItem(title: L10n.get("installHooks"), action: #selector(installHooksAction), keyEquivalent: "")
+            installItem.target = self
+            hookMenu.addItem(installItem)
+        }
+        let changePathItem = NSMenuItem(title: L10n.get("changeSettingsPath"), action: #selector(changeSettingsPathAction), keyEquivalent: "")
+        changePathItem.target = self
+        hookMenu.addItem(changePathItem)
+        hookItem.submenu = hookMenu
+        settingsMenu.addItem(hookItem)
 
         // Language submenu
         settingsMenu.addItem(.separator())
@@ -365,6 +433,35 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     }
 
     // MARK: - History Actions
+
+    // MARK: - Hook Actions
+
+    @objc private func installHooksAction() {
+        let hook = HookManager.shared
+        if !hook.isConfigured {
+            guard hook.selectSettingsFile() else { return }
+        }
+        let result = hook.installHooks()
+        showHookResult(result.message)
+        rebuildMenu()
+    }
+
+    @objc private func uninstallHooksAction() {
+        let result = HookManager.shared.uninstallHooks()
+        showHookResult(result.message)
+        rebuildMenu()
+    }
+
+    @objc private func changeSettingsPathAction() {
+        let hook = HookManager.shared
+        let hadHooks = hook.hasHooksInstalled()
+        guard hook.selectSettingsFile() else { return }
+        if hadHooks {
+            let result = hook.installHooks()
+            showHookResult(result.message)
+        }
+        rebuildMenu()
+    }
 
     @objc private func clearHistory() {
         history.clear()
