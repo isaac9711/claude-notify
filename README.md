@@ -8,6 +8,12 @@ Click a notification to navigate to the **exact window and tab** where Claude Co
 
 ## Features
 
+- **Menu bar resident app** — bell icon lives in your menu bar, no Dock icon
+- **Auto-update via Sparkle** — checks GitHub Releases automatically, installs with one click
+- **Multi-language support** — 7 languages (en, ko, zh, ja, es, vi, pt) with system auto-detection and manual override
+- **Notification history** — last 10 notifications stored in memory, viewable from the menu bar
+- **IPC delivery** — when the app is already running, new notifications arrive via `DistributedNotificationCenter` instead of launching a new process
+- **Launch at Login** — enabled by default, toggleable in Settings
 - Native macOS notifications (`UNUserNotificationCenter`)
 - Source app icon + project name displayed in notification
 - Click-to-navigate to the exact window/tab:
@@ -133,11 +139,16 @@ Claude Code hook fires
     |     Terminal -> tty path via ps
     |     Others  -> (none, uses workspace path)
     |
-    +-- Launch ClaudeNotify.app
+    +-- Is ClaudeNotify already running?
           |
-          +-- Send notification via UNUserNotificationCenter
-          +-- Attach source app icon
-          +-- Store session/workspace info in userInfo
+          +-- YES -> deliver via DistributedNotificationCenter (IPC)
+          |            app receives payload, sends UNUserNotification, updates history
+          |
+          +-- NO  -> launch ClaudeNotify.app (stays resident in menu bar)
+                       |
+                       +-- Send notification via UNUserNotificationCenter
+                       +-- Attach source app icon
+                       +-- Store session/workspace info in notification history
 ```
 
 ### Click Navigation Flow
@@ -171,6 +182,18 @@ Notification clicked
 - Passes `$PWD` (working directory) as workspace path
 - `open -b <bundleId> <workspace>` activates the project window
 - Each project has its own window, ensuring accurate navigation
+
+## Menu Bar
+
+ClaudeNotify lives in the menu bar as a bell icon (`􀋚`). Click it to access:
+
+- **Recent Notifications** — last 10 notifications with title, message, and timestamp; click any entry to navigate to that session
+- **Check for Updates** — manually trigger a Sparkle update check against GitHub Releases
+- **Settings**
+  - Launch at Login (default: ON)
+  - Auto Updates (default: ON)
+  - Language — choose from system auto-detect or one of 7 languages
+- **Quit**
 
 ## CLI Options
 
@@ -235,18 +258,38 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
 ```
 /Applications/ClaudeNotify.app/
 └── Contents/
-    ├── Info.plist          # Bundle ID: com.claude.notify
+    ├── Info.plist              # Bundle config + Sparkle keys
+    ├── Frameworks/
+    │   └── Sparkle.framework   # Auto-update framework
     ├── MacOS/
-    │   └── ClaudeNotify    # Compiled binary
+    │   └── ClaudeNotify        # Universal binary (arm64 + x86_64)
     └── Resources/
-        └── AppIcon.icns    # Bell icon
+        └── AppIcon.icns        # Bell icon
 
-~/.claude/settings.json     # Claude Code hook configuration
+Source (SPM project):
+├── Package.swift               # SPM + Sparkle dependency
+├── Sources/ClaudeNotify/
+│   ├── main.swift              # Entry point, CLI dispatch, IPC
+│   ├── AppDelegate.swift       # Menu bar, notifications, Sparkle
+│   ├── WindowActivation.swift  # SkyLight APIs
+│   ├── NotificationPayload.swift
+│   ├── NotificationHistory.swift
+│   └── Localization.swift      # 7-language support
+├── Resources/
+│   ├── Info.plist
+│   ├── AppIcon.icns
+│   └── ClaudeNotify.entitlements
+└── build.sh
 ```
 
 **Tech Stack:**
 - Swift + Cocoa + UserNotifications + ApplicationServices + SkyLight
+- Sparkle 2 (auto-update via GitHub Releases + EdDSA signing)
+- Swift Package Manager
 - UNUserNotificationCenter (modern notification API)
+- SMAppService (login item management)
+- DistributedNotificationCenter (IPC between CLI and resident app)
+- Menu bar: NSStatusItem + SF Symbols (`bell.fill`)
 - SkyLight private API (`_SLPSSetFrontProcessWithOptions`) for fullscreen Space switching
 - Accessibility API (AXUIElement) for window detection
 - AppleScript (NSAppleScript) for iTerm/Terminal tab control

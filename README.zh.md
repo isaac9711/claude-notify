@@ -8,6 +8,12 @@
 
 ## 功能特性
 
+- **菜单栏常驻应用** — 菜单栏显示铃铛图标，无 Dock 图标
+- **Sparkle 自动更新** — 自动检查 GitHub Releases，一键安装
+- **多语言支持** — 7 种语言（en、ko、zh、ja、es、vi、pt），自动检测系统语言，支持手动切换
+- **通知历史** — 内存中保存最近 10 条通知，可在菜单栏查看
+- **IPC 投递** — 应用已运行时，通过 `DistributedNotificationCenter` 传递新通知，无需启动新进程
+- **登录时启动** — 默认开启，可在设置中切换
 - 原生 macOS 通知（`UNUserNotificationCenter`）
 - 通知中显示源应用图标和项目名称
 - 点击即可导航到精确的窗口/标签页：
@@ -132,11 +138,16 @@ Claude Code hook 触发
     |     Terminal -> 通过 ps 获取 tty 路径
     |     其他    -> （无，使用工作区路径）
     |
-    +-- 启动 ClaudeNotify.app
+    +-- ClaudeNotify 是否已在运行？
           |
-          +-- 通过 UNUserNotificationCenter 发送通知
-          +-- 附加源应用图标
-          +-- 将 session/workspace 信息存储在 userInfo 中
+          +-- 是 -> 通过 DistributedNotificationCenter 进行 IPC 投递
+          |          应用接收负载 → 发送 UNUserNotification → 更新历史记录
+          |
+          +-- 否 -> 启动 ClaudeNotify.app（常驻于菜单栏）
+                     |
+                     +-- 通过 UNUserNotificationCenter 发送通知
+                     +-- 附加源应用图标
+                     +-- 将 session/workspace 信息存入通知历史
 ```
 
 ### 点击导航流程
@@ -170,6 +181,18 @@ Claude Code hook 触发
 - 将 `$PWD`（工作目录）作为工作区路径传入
 - `open -b <bundleId> <workspace>` 激活对应的项目窗口
 - 每个项目有独立的窗口，确保导航精准
+
+## 菜单栏
+
+ClaudeNotify 以铃铛图标（`􀋚`）常驻于菜单栏。点击图标可访问：
+
+- **最近通知** — 最近 10 条通知，含标题、消息和时间戳；点击条目可导航到对应会话
+- **检查更新** — 手动触发 Sparkle 检查 GitHub Releases 更新
+- **设置**
+  - 登录时启动（默认：开启）
+  - 自动更新（默认：开启）
+  - 语言 — 选择系统自动检测或 7 种语言之一
+- **退出**
 
 ## CLI 选项
 
@@ -234,19 +257,39 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
 ```
 /Applications/ClaudeNotify.app/
 └── Contents/
-    ├── Info.plist          # Bundle ID: com.claude.notify
+    ├── Info.plist              # Bundle config + Sparkle keys
+    ├── Frameworks/
+    │   └── Sparkle.framework   # Auto-update framework
     ├── MacOS/
-    │   └── ClaudeNotify    # 编译后的二进制文件
+    │   └── ClaudeNotify        # Universal binary (arm64 + x86_64)
     └── Resources/
-        └── AppIcon.icns    # 铃铛图标
+        └── AppIcon.icns        # Bell icon
 
-~/.claude/settings.json     # Claude Code hook 配置文件
+Source (SPM project):
+├── Package.swift               # SPM + Sparkle dependency
+├── Sources/ClaudeNotify/
+│   ├── main.swift              # Entry point, CLI dispatch, IPC
+│   ├── AppDelegate.swift       # Menu bar, notifications, Sparkle
+│   ├── WindowActivation.swift  # SkyLight APIs
+│   ├── NotificationPayload.swift
+│   ├── NotificationHistory.swift
+│   └── Localization.swift      # 7-language support
+├── Resources/
+│   ├── Info.plist
+│   ├── AppIcon.icns
+│   └── ClaudeNotify.entitlements
+└── build.sh
 ```
 
 **技术栈：**
 - Swift + Cocoa + UserNotifications + ApplicationServices + SkyLight
+- Sparkle 2（通过 GitHub Releases + EdDSA 签名自动更新）
+- Swift Package Manager
 - UNUserNotificationCenter（现代通知 API）
-- SkyLight private API (`_SLPSSetFrontProcessWithOptions`) for fullscreen Space switching
+- SMAppService（登录项管理）
+- DistributedNotificationCenter（CLI 与常驻应用间的 IPC）
+- 菜单栏：NSStatusItem + SF Symbols（`bell.fill`）
+- SkyLight private API (`_SLPSSetFrontProcessWithOptions`) 用于全屏 Space 切换
 - Accessibility API (AXUIElement) 用于窗口检测
 - AppleScript (NSAppleScript) 用于 iTerm/Terminal 标签页控制
 - 使用 hardened runtime + Apple Events entitlement 进行代码签名

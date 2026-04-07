@@ -8,6 +8,12 @@ Nhấp vào thông báo để điều hướng đến **đúng cửa sổ và ta
 
 ## Tính năng
 
+- **Ứng dụng thường trú trên thanh menu** — biểu tượng chuông trên thanh menu, không có biểu tượng Dock
+- **Tự động cập nhật qua Sparkle** — tự động kiểm tra GitHub Releases, cài đặt chỉ với một cú nhấp
+- **Hỗ trợ đa ngôn ngữ** — 7 ngôn ngữ (en, ko, zh, ja, es, vi, pt) với tự động nhận diện ngôn ngữ hệ thống và chuyển đổi thủ công
+- **Lịch sử thông báo** — lưu 10 thông báo gần nhất trong bộ nhớ, xem được từ thanh menu
+- **Giao tiếp IPC** — khi ứng dụng đã chạy, thông báo mới được gửi qua `DistributedNotificationCenter` thay vì khởi chạy tiến trình mới
+- **Khởi động cùng hệ thống** — bật mặc định, có thể tắt trong Cài đặt
 - Thông báo macOS gốc (`UNUserNotificationCenter`)
 - Hiển thị biểu tượng ứng dụng nguồn + tên dự án trong thông báo
 - Nhấp để điều hướng đến đúng cửa sổ/tab:
@@ -124,19 +130,24 @@ Nếu bạn chủ yếu làm việc với worktree được mở dưới dạng 
 ### Luồng thông báo
 
 ```
-Claude Code hook fires
+Claude Code hook kích hoạt
     |
-    +-- Identify app via $__CFBundleIdentifier (iTerm, Cursor, VS Code, Terminal)
-    +-- Capture session info:
+    +-- Nhận diện ứng dụng qua $__CFBundleIdentifier (iTerm, Cursor, VS Code, Terminal)
+    +-- Lấy thông tin phiên:
     |     iTerm   -> $ITERM_SESSION_ID (GUID)
-    |     Terminal -> tty path via ps
-    |     Others  -> (none, uses workspace path)
+    |     Terminal -> đường dẫn tty qua ps
+    |     Khác    -> (không có, dùng đường dẫn workspace)
     |
-    +-- Launch ClaudeNotify.app
+    +-- ClaudeNotify đã chạy chưa?
           |
-          +-- Send notification via UNUserNotificationCenter
-          +-- Attach source app icon
-          +-- Store session/workspace info in userInfo
+          +-- CÓ -> gửi qua DistributedNotificationCenter (IPC)
+          |          ứng dụng nhận payload → gửi UNUserNotification → cập nhật lịch sử
+          |
+          +-- CHƯA -> khởi chạy ClaudeNotify.app (thường trú trên thanh menu)
+                       |
+                       +-- Gửi thông báo qua UNUserNotificationCenter
+                       +-- Đính kèm biểu tượng ứng dụng nguồn
+                       +-- Lưu thông tin phiên/workspace vào lịch sử thông báo
 ```
 
 ### Luồng điều hướng khi nhấp
@@ -170,6 +181,18 @@ Notification clicked
 - Truyền `$PWD` (thư mục làm việc) làm workspace path
 - `open -b <bundleId> <workspace>` kích hoạt cửa sổ dự án
 - Mỗi dự án có cửa sổ riêng, đảm bảo điều hướng chính xác
+
+## Thanh menu
+
+ClaudeNotify thường trú trên thanh menu với biểu tượng chuông (`􀋚`). Nhấp vào để truy cập:
+
+- **Thông báo gần đây** — 10 thông báo gần nhất kèm tiêu đề, nội dung và thời gian; nhấp vào mục để điều hướng đến phiên đó
+- **Kiểm tra cập nhật** — kích hoạt thủ công việc kiểm tra cập nhật Sparkle từ GitHub Releases
+- **Cài đặt**
+  - Khởi động cùng hệ thống (mặc định: BẬT)
+  - Tự động cập nhật (mặc định: BẬT)
+  - Ngôn ngữ — chọn tự động theo hệ thống hoặc một trong 7 ngôn ngữ
+- **Thoát**
 
 ## Tùy chọn CLI
 
@@ -234,19 +257,39 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
 ```
 /Applications/ClaudeNotify.app/
 └── Contents/
-    ├── Info.plist          # Bundle ID: com.claude.notify
+    ├── Info.plist              # Bundle config + Sparkle keys
+    ├── Frameworks/
+    │   └── Sparkle.framework   # Auto-update framework
     ├── MacOS/
-    │   └── ClaudeNotify    # Binary đã biên dịch
+    │   └── ClaudeNotify        # Universal binary (arm64 + x86_64)
     └── Resources/
-        └── AppIcon.icns    # Biểu tượng chuông
+        └── AppIcon.icns        # Biểu tượng chuông
 
-~/.claude/settings.json     # Cấu hình hook của Claude Code
+Source (SPM project):
+├── Package.swift               # SPM + Sparkle dependency
+├── Sources/ClaudeNotify/
+│   ├── main.swift              # Entry point, CLI dispatch, IPC
+│   ├── AppDelegate.swift       # Menu bar, notifications, Sparkle
+│   ├── WindowActivation.swift  # SkyLight APIs
+│   ├── NotificationPayload.swift
+│   ├── NotificationHistory.swift
+│   └── Localization.swift      # 7-language support
+├── Resources/
+│   ├── Info.plist
+│   ├── AppIcon.icns
+│   └── ClaudeNotify.entitlements
+└── build.sh
 ```
 
 **Công nghệ sử dụng:**
 - Swift + Cocoa + UserNotifications + ApplicationServices + SkyLight
+- Sparkle 2 (tự động cập nhật qua GitHub Releases + ký EdDSA)
+- Swift Package Manager
 - UNUserNotificationCenter (API thông báo hiện đại)
-- SkyLight private API (`_SLPSSetFrontProcessWithOptions`) for fullscreen Space switching
+- SMAppService (quản lý mục khởi động)
+- DistributedNotificationCenter (IPC giữa CLI và ứng dụng thường trú)
+- Thanh menu: NSStatusItem + SF Symbols (`bell.fill`)
+- SkyLight private API (`_SLPSSetFrontProcessWithOptions`) để chuyển đổi fullscreen Space
 - Accessibility API (AXUIElement) để phát hiện cửa sổ
 - AppleScript (NSAppleScript) để điều khiển tab iTerm/Terminal
 - Ký mã với hardened runtime + quyền Apple Events

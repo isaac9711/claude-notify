@@ -8,6 +8,12 @@ Haz clic en una notificacion para navegar a la **ventana y pestana exacta** dond
 
 ## Caracteristicas
 
+- **Aplicación residente en la barra de menú** — icono de campana en la barra de menú, sin icono en el Dock
+- **Actualización automática con Sparkle** — comprueba GitHub Releases automáticamente, se instala con un clic
+- **Soporte multiidioma** — 7 idiomas (en, ko, zh, ja, es, vi, pt) con detección automática del sistema e cambio manual
+- **Historial de notificaciones** — las últimas 10 notificaciones se guardan en memoria, consultables desde la barra de menú
+- **Entrega por IPC** — cuando la app ya está en ejecución, las nuevas notificaciones se entregan via `DistributedNotificationCenter` sin lanzar un nuevo proceso
+- **Iniciar al iniciar sesión** — activado por defecto, configurable en Ajustes
 - Notificaciones nativas de macOS (`UNUserNotificationCenter`)
 - Icono de la aplicacion de origen + nombre del proyecto mostrados en la notificacion
 - Navegacion al hacer clic a la ventana/pestana exacta:
@@ -124,19 +130,24 @@ Si trabajas principalmente con worktrees abiertos como ventanas separadas de Cur
 ### Flujo de notificaciones
 
 ```
-Claude Code hook fires
+Claude Code hook se ejecuta
     |
-    +-- Identify app via $__CFBundleIdentifier (iTerm, Cursor, VS Code, Terminal)
-    +-- Capture session info:
+    +-- Identificar app via $__CFBundleIdentifier (iTerm, Cursor, VS Code, Terminal)
+    +-- Capturar info de sesión:
     |     iTerm   -> $ITERM_SESSION_ID (GUID)
-    |     Terminal -> tty path via ps
-    |     Others  -> (none, uses workspace path)
+    |     Terminal -> ruta tty via ps
+    |     Otros   -> (ninguna, usa ruta del workspace)
     |
-    +-- Launch ClaudeNotify.app
+    +-- ¿ClaudeNotify ya está en ejecución?
           |
-          +-- Send notification via UNUserNotificationCenter
-          +-- Attach source app icon
-          +-- Store session/workspace info in userInfo
+          +-- SÍ -> entregar via DistributedNotificationCenter (IPC)
+          |          la app recibe el payload → envía UNUserNotification → actualiza historial
+          |
+          +-- NO -> lanzar ClaudeNotify.app (se queda residente en la barra de menú)
+                     |
+                     +-- Enviar notificación via UNUserNotificationCenter
+                     +-- Adjuntar icono de la app de origen
+                     +-- Guardar info de sesión/workspace en el historial
 ```
 
 ### Flujo de navegacion al hacer clic
@@ -170,6 +181,18 @@ Notification clicked
 - Pasa `$PWD` (directorio de trabajo) como ruta del workspace
 - `open -b <bundleId> <workspace>` activa la ventana del proyecto
 - Cada proyecto tiene su propia ventana, asegurando una navegacion precisa
+
+## Barra de menú
+
+ClaudeNotify reside en la barra de menú como un icono de campana (`􀋚`). Al hacer clic tienes acceso a:
+
+- **Notificaciones recientes** — las últimas 10 notificaciones con título, mensaje y hora; haz clic en una entrada para navegar a esa sesión
+- **Buscar actualizaciones** — desencadenar manualmente una comprobación de actualizaciones Sparkle en GitHub Releases
+- **Ajustes**
+  - Iniciar al iniciar sesión (por defecto: ON)
+  - Actualizaciones automáticas (por defecto: ON)
+  - Idioma — elige detección automática del sistema o uno de los 7 idiomas
+- **Salir**
 
 ## Opciones de CLI
 
@@ -234,19 +257,39 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
 ```
 /Applications/ClaudeNotify.app/
 └── Contents/
-    ├── Info.plist          # Bundle ID: com.claude.notify
+    ├── Info.plist              # Bundle config + Sparkle keys
+    ├── Frameworks/
+    │   └── Sparkle.framework   # Auto-update framework
     ├── MacOS/
-    │   └── ClaudeNotify    # Binario compilado
+    │   └── ClaudeNotify        # Universal binary (arm64 + x86_64)
     └── Resources/
-        └── AppIcon.icns    # Icono de campana
+        └── AppIcon.icns        # Icono de campana
 
-~/.claude/settings.json     # Configuracion de hooks de Claude Code
+Source (SPM project):
+├── Package.swift               # SPM + Sparkle dependency
+├── Sources/ClaudeNotify/
+│   ├── main.swift              # Entry point, CLI dispatch, IPC
+│   ├── AppDelegate.swift       # Menu bar, notifications, Sparkle
+│   ├── WindowActivation.swift  # SkyLight APIs
+│   ├── NotificationPayload.swift
+│   ├── NotificationHistory.swift
+│   └── Localization.swift      # 7-language support
+├── Resources/
+│   ├── Info.plist
+│   ├── AppIcon.icns
+│   └── ClaudeNotify.entitlements
+└── build.sh
 ```
 
 **Stack tecnologico:**
 - Swift + Cocoa + UserNotifications + ApplicationServices + SkyLight
+- Sparkle 2 (actualización automática via GitHub Releases + firma EdDSA)
+- Swift Package Manager
 - UNUserNotificationCenter (API moderna de notificaciones)
-- SkyLight private API (`_SLPSSetFrontProcessWithOptions`) for fullscreen Space switching
+- SMAppService (gestión del elemento de inicio de sesión)
+- DistributedNotificationCenter (IPC entre CLI y la app residente)
+- Barra de menú: NSStatusItem + SF Symbols (`bell.fill`)
+- SkyLight private API (`_SLPSSetFrontProcessWithOptions`) para cambio de Space en pantalla completa
 - Accessibility API (AXUIElement) para deteccion de ventanas
 - AppleScript (NSAppleScript) para control de pestanas en iTerm/Terminal
 - Firmado con hardened runtime + entitlement de Apple Events
