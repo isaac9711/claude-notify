@@ -39,10 +39,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         let menu = NSMenu()
 
         // Recent notifications submenu
-        let recentItem = NSMenuItem(title: "최근 알림", action: nil, keyEquivalent: "")
+        let recentItem = NSMenuItem(title: L10n.get("recentNotifications"), action: nil, keyEquivalent: "")
         let recentMenu = NSMenu()
         if history.records.isEmpty {
-            let emptyItem = NSMenuItem(title: "알림 없음", action: nil, keyEquivalent: "")
+            let emptyItem = NSMenuItem(title: L10n.get("noNotifications"), action: nil, keyEquivalent: "")
             emptyItem.isEnabled = false
             recentMenu.addItem(emptyItem)
         } else {
@@ -60,7 +60,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                 recentMenu.addItem(item)
             }
             recentMenu.addItem(.separator())
-            let clearItem = NSMenuItem(title: "기록 지우기", action: #selector(clearHistory), keyEquivalent: "")
+            let clearItem = NSMenuItem(title: L10n.get("clearHistory"), action: #selector(clearHistory), keyEquivalent: "")
             clearItem.target = self
             recentMenu.addItem(clearItem)
         }
@@ -70,30 +70,45 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         menu.addItem(.separator())
 
         // Check for updates
-        let updateItem = NSMenuItem(title: "업데이트 확인...", action: #selector(SPUStandardUpdaterController.checkForUpdates(_:)), keyEquivalent: "")
+        let updateItem = NSMenuItem(title: L10n.get("checkForUpdates"), action: #selector(SPUStandardUpdaterController.checkForUpdates(_:)), keyEquivalent: "")
         updateItem.target = updaterController
         menu.addItem(updateItem)
 
         // Settings submenu
-        let settingsItem = NSMenuItem(title: "설정", action: nil, keyEquivalent: "")
+        let settingsItem = NSMenuItem(title: L10n.get("settings"), action: nil, keyEquivalent: "")
         let settingsMenu = NSMenu()
 
-        let loginItem = NSMenuItem(title: "로그인 시 자동 시작", action: #selector(toggleLoginItem(_:)), keyEquivalent: "")
+        let loginItem = NSMenuItem(title: L10n.get("launchAtLogin"), action: #selector(toggleLoginItem(_:)), keyEquivalent: "")
         loginItem.target = self
         loginItem.state = UserDefaults.standard.bool(forKey: "launchAtLogin") ? .on : .off
         settingsMenu.addItem(loginItem)
 
-        let autoUpdateItem = NSMenuItem(title: "자동 업데이트", action: #selector(toggleAutoUpdate(_:)), keyEquivalent: "")
+        let autoUpdateItem = NSMenuItem(title: L10n.get("automaticUpdates"), action: #selector(toggleAutoUpdate(_:)), keyEquivalent: "")
         autoUpdateItem.target = self
         autoUpdateItem.state = updaterController?.updater.automaticallyChecksForUpdates == true ? .on : .off
         settingsMenu.addItem(autoUpdateItem)
+
+        // Language submenu
+        settingsMenu.addItem(.separator())
+        let langItem = NSMenuItem(title: L10n.get("language"), action: nil, keyEquivalent: "")
+        let langMenu = NSMenu()
+        let currentSelection = Language.savedSelection
+        for lang in Language.allCases {
+            let item = NSMenuItem(title: lang.displayName, action: #selector(changeLanguage(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = lang.rawValue
+            item.state = lang == currentSelection ? .on : .off
+            langMenu.addItem(item)
+        }
+        langItem.submenu = langMenu
+        settingsMenu.addItem(langItem)
 
         settingsItem.submenu = settingsMenu
         menu.addItem(settingsItem)
 
         menu.addItem(.separator())
 
-        let quitItem = NSMenuItem(title: "종료", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: L10n.get("quit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         menu.addItem(quitItem)
 
         statusItem.menu = menu
@@ -306,6 +321,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
     @objc private func toggleAutoUpdate(_ sender: NSMenuItem) {
         updaterController.updater.automaticallyChecksForUpdates.toggle()
+        rebuildMenu()
+    }
+
+    @objc private func changeLanguage(_ sender: NSMenuItem) {
+        guard let langCode = sender.representedObject as? String else { return }
+        UserDefaults.standard.set(langCode, forKey: "language")
         rebuildMenu()
     }
 
