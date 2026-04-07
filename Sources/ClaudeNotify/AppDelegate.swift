@@ -11,11 +11,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     // MARK: - App Lifecycle
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        setupSparkle()
+        setupLoginItem()
         setupMenuBar()
         setupNotificationCenter()
         setupIPCObserver()
-        setupSparkle()
-        setupLoginItem()
 
         // Handle launch args if this is the first instance with notification args
         let args = ProcessInfo.processInfo.arguments
@@ -292,10 +292,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
     private func setupSparkle() {
         updaterController = SPUStandardUpdaterController(
-            startingUpdater: true,
+            startingUpdater: false,
             updaterDelegate: nil,
             userDriverDelegate: nil
         )
+        do {
+            try updaterController.updater.start()
+        } catch {
+            fputs("Sparkle start error: \(error)\n", stderr)
+        }
     }
 
     // MARK: - Login Item
