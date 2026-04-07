@@ -5,5 +5,18 @@
         <link>https://raw.githubusercontent.com/isaac9711/claude-notify/main/appcast.xml</link>
         <description>ClaudeNotify updates</description>
         <language>en</language>
+        <item>
+            <title>v2.0.0</title>
+            <pubDate>Mon, 07 Apr 2026 00:00:00 +0900</pubDate>
+            <sparkle:version>2.0</sparkle:version>
+            <sparkle:shortVersionString>2.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <enclosure
+                url="https://github.com/isaac9711/claude-notify/releases/download/v2.0.0/ClaudeNotify-v2.0.zip"
+                length="1236620"
+                type="application/octet-stream"
+                sparkle:edSignature="3cMHbMiq6z5W7GTMgDN3BzKZjoQcYZ4hZBErSAmCcViXefZooToyqMmVNFPInrWEaw7HZzVyM0smzQ3tYoJyCw=="
+            />
+        </item>
     </channel>
 </rss>
