@@ -296,20 +296,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         let windowIdStr = userInfo["windowId"] as? String ?? ""
 
         if !bundleId.isEmpty {
-            // Step 1: Try Space switching via private API (works for Cocoa native apps)
+            // Parse windowId (used only for native Cocoa apps: iTerm, Terminal)
+            var windowID: CGWindowID = 0
+            var windowPID: pid_t = 0
             if !windowIdStr.isEmpty {
                 let parts = windowIdStr.split(separator: ":")
-                if parts.count == 2,
-                   let wid = UInt32(parts[0]),
-                   let pid = Int32(parts[1]) {
-                    activateWindow(windowID: CGWindowID(wid), pid: pid)
-                    usleep(200000)
+                if parts.count == 2, let wid = UInt32(parts[0]), let pid = Int32(parts[1]) {
+                    windowID = CGWindowID(wid)
+                    windowPID = pid
                 }
             }
 
-            // Step 2: App-specific activation (always runs)
             if !session.isEmpty && session.hasPrefix("/dev/") {
-                // macOS Terminal: select tab by tty
+                // macOS Terminal: Space switch (native Cocoa) + select tab by tty
+                if windowID != 0 { activateWindow(windowID: windowID, pid: windowPID); usleep(200000) }
                 let script = """
                 tell application "Terminal"
                     repeat with w in windows
@@ -329,7 +329,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                 try? task.run()
                 task.waitUntilExit()
             } else if !session.isEmpty && session.contains(":") && !session.hasPrefix("/") {
-                // iTerm: select tab by session GUID
+                // iTerm: Space switch (native Cocoa) + select tab by session GUID
+                if windowID != 0 { activateWindow(windowID: windowID, pid: windowPID); usleep(200000) }
                 let guid = String(session.split(separator: ":").last ?? "")
                 let script = """
                 tell application "iTerm2"
@@ -349,7 +350,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                 var errorInfo: NSDictionary?
                 NSAppleScript(source: script)?.executeAndReturnError(&errorInfo)
             } else if session == "activate-only" {
-                // Warp and other terminals without AppleScript: just activate app
+                // Warp: just activate app (no workspace to avoid new tabs)
                 let task = Process()
                 task.executableURL = URL(fileURLWithPath: "/usr/bin/open")
                 task.arguments = ["-b", bundleId]

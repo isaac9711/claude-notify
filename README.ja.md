@@ -83,7 +83,7 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
         "hooks": [
           {
             "type": "command",
-            "command": "S=; if [ \"$__CFBundleIdentifier\" = \"com.googlecode.iterm2\" ]; then S=\"$ITERM_SESSION_ID\"; elif [ \"$__CFBundleIdentifier\" = \"com.apple.Terminal\" ]; then S=\"/dev/$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')\"; fi; open /Applications/ClaudeNotify.app --args -title 'Claude Code' -message \"入力待ち — $(basename \"$PWD\")\" -sound default -activate \"$__CFBundleIdentifier\" -workspace \"$PWD\" -session \"$S\""
+            "command": "N=/Applications/ClaudeNotify.app; S=; if [ \"$__CFBundleIdentifier\" = \"com.googlecode.iterm2\" ]; then S=\"$ITERM_SESSION_ID\"; elif [ \"$__CFBundleIdentifier\" = \"com.apple.Terminal\" ]; then S=\"/dev/$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')\"; elif [ \"$__CFBundleIdentifier\" = \"dev.warp.Warp-Stable\" ]; then S=\"activate-only\"; fi; W=$($N/Contents/MacOS/ClaudeNotify --get-window-id \"$__CFBundleIdentifier\" 2>/dev/null); open $N --args -title 'Claude Code' -message \"入力待ち — $(basename \"$PWD\")\" -sound default -activate \"$__CFBundleIdentifier\" -workspace \"$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null | xargs dirname 2>/dev/null || echo $PWD)\" -session \"$S\" -windowId \"$W\""
           }
         ]
       }
@@ -93,13 +93,30 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
         "hooks": [
           {
             "type": "command",
-            "command": "S=; if [ \"$__CFBundleIdentifier\" = \"com.googlecode.iterm2\" ]; then S=\"$ITERM_SESSION_ID\"; elif [ \"$__CFBundleIdentifier\" = \"com.apple.Terminal\" ]; then S=\"/dev/$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')\"; fi; open /Applications/ClaudeNotify.app --args -title 'Claude Code' -message \"タスク完了 — $(basename \"$PWD\")\" -sound default -activate \"$__CFBundleIdentifier\" -workspace \"$PWD\" -session \"$S\""
+            "command": "N=/Applications/ClaudeNotify.app; S=; if [ \"$__CFBundleIdentifier\" = \"com.googlecode.iterm2\" ]; then S=\"$ITERM_SESSION_ID\"; elif [ \"$__CFBundleIdentifier\" = \"com.apple.Terminal\" ]; then S=\"/dev/$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')\"; elif [ \"$__CFBundleIdentifier\" = \"dev.warp.Warp-Stable\" ]; then S=\"activate-only\"; fi; W=$($N/Contents/MacOS/ClaudeNotify --get-window-id \"$__CFBundleIdentifier\" 2>/dev/null); open $N --args -title 'Claude Code' -message \"タスク完了 — $(basename \"$PWD\")\" -sound default -activate \"$__CFBundleIdentifier\" -workspace \"$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null | xargs dirname 2>/dev/null || echo $PWD)\" -session \"$S\" -windowId \"$W\""
           }
         ]
       }
     ]
   }
 }
+```
+
+### Git Worktree ワークスペースパス設定
+
+デフォルトのHookは `git rev-parse --git-common-dir` を使用して、常に**ベースプロジェクトのルート**に解決します。これにより、Claude Codeがworktreeを作成した際に新しいウィンドウが開くのを防ぎます。
+
+| シナリオ | デフォルト (git common dir) | 代替 (git show-toplevel) |
+|----------|:---:|:---:|
+| ベースプロジェクトウィンドウ | ベースウィンドウに移動 ✓ | ベースウィンドウに移動 ✓ |
+| Worktreeウィンドウ（別途開いた場合） | ベースウィンドウに移動 | Worktreeウィンドウに移動 ✓ |
+| Claude Codeが作成したworktree（ウィンドウなし） | ベースウィンドウに移動 ✓ | 新しいウィンドウを作成 |
+
+主にworktreeを別のCursor/VS Codeウィンドウで開いて作業する場合は、Hookのworkspace部分を以下のように置き換えてください：
+
+```diff
+- -workspace \"$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null | xargs dirname 2>/dev/null || echo $PWD)\"
++ -workspace \"$(git rev-parse --show-toplevel 2>/dev/null || echo $PWD)\"
 ```
 
 ## 仕組み

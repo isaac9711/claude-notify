@@ -83,7 +83,7 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
         "hooks": [
           {
             "type": "command",
-            "command": "S=; if [ \"$__CFBundleIdentifier\" = \"com.googlecode.iterm2\" ]; then S=\"$ITERM_SESSION_ID\"; elif [ \"$__CFBundleIdentifier\" = \"com.apple.Terminal\" ]; then S=\"/dev/$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')\"; fi; open /Applications/ClaudeNotify.app --args -title 'Claude Code' -message \"입력 대기 — $(basename \"$PWD\")\" -sound default -activate \"$__CFBundleIdentifier\" -workspace \"$PWD\" -session \"$S\""
+            "command": "N=/Applications/ClaudeNotify.app; S=; if [ \"$__CFBundleIdentifier\" = \"com.googlecode.iterm2\" ]; then S=\"$ITERM_SESSION_ID\"; elif [ \"$__CFBundleIdentifier\" = \"com.apple.Terminal\" ]; then S=\"/dev/$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')\"; elif [ \"$__CFBundleIdentifier\" = \"dev.warp.Warp-Stable\" ]; then S=\"activate-only\"; fi; W=$($N/Contents/MacOS/ClaudeNotify --get-window-id \"$__CFBundleIdentifier\" 2>/dev/null); open $N --args -title 'Claude Code' -message \"입력 대기 — $(basename \"$PWD\")\" -sound default -activate \"$__CFBundleIdentifier\" -workspace \"$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null | xargs dirname 2>/dev/null || echo $PWD)\" -session \"$S\" -windowId \"$W\""
           }
         ]
       }
@@ -93,13 +93,30 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
         "hooks": [
           {
             "type": "command",
-            "command": "S=; if [ \"$__CFBundleIdentifier\" = \"com.googlecode.iterm2\" ]; then S=\"$ITERM_SESSION_ID\"; elif [ \"$__CFBundleIdentifier\" = \"com.apple.Terminal\" ]; then S=\"/dev/$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')\"; fi; open /Applications/ClaudeNotify.app --args -title 'Claude Code' -message \"작업 완료 — $(basename \"$PWD\")\" -sound default -activate \"$__CFBundleIdentifier\" -workspace \"$PWD\" -session \"$S\""
+            "command": "N=/Applications/ClaudeNotify.app; S=; if [ \"$__CFBundleIdentifier\" = \"com.googlecode.iterm2\" ]; then S=\"$ITERM_SESSION_ID\"; elif [ \"$__CFBundleIdentifier\" = \"com.apple.Terminal\" ]; then S=\"/dev/$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')\"; elif [ \"$__CFBundleIdentifier\" = \"dev.warp.Warp-Stable\" ]; then S=\"activate-only\"; fi; W=$($N/Contents/MacOS/ClaudeNotify --get-window-id \"$__CFBundleIdentifier\" 2>/dev/null); open $N --args -title 'Claude Code' -message \"작업 완료 — $(basename \"$PWD\")\" -sound default -activate \"$__CFBundleIdentifier\" -workspace \"$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null | xargs dirname 2>/dev/null || echo $PWD)\" -session \"$S\" -windowId \"$W\""
           }
         ]
       }
     ]
   }
 }
+```
+
+### Git Worktree 워크스페이스 경로 설정
+
+기본 Hook은 `git rev-parse --git-common-dir`를 사용하여 항상 **베이스 프로젝트 루트**로 해석합니다. 이를 통해 Claude Code가 worktree를 생성할 때 새 창이 열리는 것을 방지합니다.
+
+| 시나리오 | 기본값 (git common dir) | 대안 (git show-toplevel) |
+|----------|:---:|:---:|
+| 베이스 프로젝트 창 | 베이스 창으로 이동 ✓ | 베이스 창으로 이동 ✓ |
+| Worktree 창 (별도로 열린 경우) | 베이스 창으로 이동 | Worktree 창으로 이동 ✓ |
+| Claude Code가 생성한 worktree (창 없음) | 베이스 창으로 이동 ✓ | 새 창 생성 |
+
+주로 worktree를 별도의 Cursor/VS Code 창으로 열어 작업하는 경우, Hook의 workspace 부분을 다음과 같이 교체하세요:
+
+```diff
+- -workspace \"$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null | xargs dirname 2>/dev/null || echo $PWD)\"
++ -workspace \"$(git rev-parse --show-toplevel 2>/dev/null || echo $PWD)\"
 ```
 
 ## How It Works
