@@ -11,6 +11,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     // MARK: - App Lifecycle
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Apply saved language to AppleLanguages for Sparkle localization
+        let resolved = Language.current.rawValue
+        UserDefaults.standard.set([resolved], forKey: "AppleLanguages")
+
         setupSparkle()
         setupLoginItem()
         setupMenuBar()
@@ -354,6 +358,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     @objc private func changeLanguage(_ sender: NSMenuItem) {
         guard let langCode = sender.representedObject as? String else { return }
         UserDefaults.standard.set(langCode, forKey: "language")
+        // Set AppleLanguages so Sparkle picks up the language override
+        let resolved = Language.current.rawValue
+        UserDefaults.standard.set([resolved], forKey: "AppleLanguages")
         rebuildMenu()
     }
 
