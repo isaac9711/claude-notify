@@ -1,4 +1,7 @@
 .DS_Store
 *.app
+*.dmg
 .build/
 .swiftpm/
+.omc/
+.claude/
