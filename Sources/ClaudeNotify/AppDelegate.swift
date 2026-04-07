@@ -70,8 +70,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         menu.addItem(.separator())
 
         // Check for updates
-        let updateItem = NSMenuItem(title: L10n.get("checkForUpdates"), action: #selector(SPUStandardUpdaterController.checkForUpdates(_:)), keyEquivalent: "")
-        updateItem.target = updaterController
+        let updateItem = NSMenuItem(title: L10n.get("checkForUpdates"), action: #selector(checkForUpdatesManually(_:)), keyEquivalent: "")
+        updateItem.target = self
         menu.addItem(updateItem)
 
         // Settings submenu
@@ -289,6 +289,28 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     }
 
     // MARK: - Sparkle
+
+    @objc func checkForUpdatesManually(_ sender: Any?) {
+        guard let feedURL = updaterController.updater.feedURL else { return }
+
+        let task = URLSession.shared.dataTask(with: feedURL) { [weak self] data, response, error in
+            DispatchQueue.main.async {
+                let httpResponse = response as? HTTPURLResponse
+                if httpResponse?.statusCode == 200, error == nil {
+                    self?.updaterController.checkForUpdates(sender)
+                } else {
+                    let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
+                    let alert = NSAlert()
+                    alert.messageText = L10n.get("noUpdatesTitle")
+                    alert.informativeText = L10n.get("noUpdatesMessage").replacingOccurrences(of: "{version}", with: version)
+                    alert.alertStyle = .informational
+                    alert.addButton(withTitle: "OK")
+                    alert.runModal()
+                }
+            }
+        }
+        task.resume()
+    }
 
     private func setupSparkle() {
         updaterController = SPUStandardUpdaterController(
