@@ -53,9 +53,9 @@ cd claude-notify
 
 ### 升级
 
-1. 下载新的 DMG（或 `git pull && ./build.sh`）
-2. 将 `ClaudeNotify.app` 拖入 `Applications` 覆盖现有应用
-3. 在系统设置 > 辅助功能中将 ClaudeNotify **关闭 → 开启**（二进制文件哈希变更会使权限失效）
+应用支持通过 **Sparkle 自动更新** — 点击菜单栏中的"检查更新"即可更新。如需从源码构建，请运行 `git pull && ./build.sh`。
+
+任何更新后，请在系统设置 > 辅助功能中将 ClaudeNotify **关闭 → 开启**（二进制文件哈希变更会使权限失效）。
 
 > `~/.claude/settings.json` 中的 Hook 配置会保留，无需修改。
 
@@ -63,12 +63,9 @@ cd claude-notify
 
 ### 1. macOS 权限
 
-**辅助功能 + 通知（首次启动）：**
-```bash
-open /Applications/ClaudeNotify.app
-```
-- 辅助功能设置会自动打开。点击 `+` 并添加 ClaudeNotify
-- 再次运行以触发通知权限对话框。允许即可
+**启动应用（首次启动）：**
+
+直接启动 ClaudeNotify.app 即可 — 在 Finder 中双击或通过 Spotlight 打开。应用将常驻于菜单栏，并默认在登录时自动启动。首次启动会自动弹出辅助功能和通知权限请求对话框。
 
 **终端自动化（如果使用 Terminal.app）：**
 ```bash
@@ -155,13 +152,14 @@ Claude Code hook 触发
 ```
 点击通知
     |
-    +-- macOS 重新启动 ClaudeNotify
-    +-- 调用 didReceive 处理器
+    +-- 应用已在运行（菜单栏常驻）
+    +-- didReceive 处理器直接被调用
     |
     +-- 判断会话类型：
           |
           +-- /dev/tty*  -> Terminal AppleScript（TTY 匹配）
           +-- w*t*p*:*   -> iTerm AppleScript（GUID 匹配）
+          +-- activate-only -> Warp（仅激活应用）
           +-- (其他)     -> open -b <bundleId> <workspace>
 ```
 
@@ -209,6 +207,13 @@ open /Applications/ClaudeNotify.app --args \
 # 获取焦点窗口标题（需要辅助功能权限）
 /Applications/ClaudeNotify.app/Contents/MacOS/ClaudeNotify \
   --get-window-title <bundleId>
+
+# 获取焦点窗口 ID（需要辅助功能权限）
+/Applications/ClaudeNotify.app/Contents/MacOS/ClaudeNotify \
+  --get-window-id <bundleId>
+
+# 检查/请求辅助功能权限
+/Applications/ClaudeNotify.app/Contents/MacOS/ClaudeNotify --setup
 
 # 请求 Terminal 自动化权限
 open /Applications/ClaudeNotify.app --args --setup-terminal
@@ -263,7 +268,10 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
     ├── MacOS/
     │   └── ClaudeNotify        # Universal binary (arm64 + x86_64)
     └── Resources/
-        └── AppIcon.icns        # Bell icon
+        ├── AppIcon.icns        # Bell icon
+        ├── en.lproj/           # Localization markers
+        ├── ko.lproj/
+        └── ...
 
 Source (SPM project):
 ├── Package.swift               # SPM + Sparkle dependency

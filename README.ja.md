@@ -53,9 +53,9 @@ cd claude-notify
 
 ### アップグレード
 
-1. 新しい DMG をダウンロード（または `git pull && ./build.sh`）
-2. `ClaudeNotify.app` を `Applications` に上書きコピー
-3. システム設定 > アクセシビリティで ClaudeNotify を **OFF → ON** に切り替え（バイナリハッシュの変更により権限が無効化されます）
+アプリは **Sparkle による自動アップデート**に対応しています — メニューバーの「アップデートを確認」をクリックするだけで更新できます。ソースビルドの場合は `git pull && ./build.sh` を実行してください。
+
+アップデート後は、システム設定 > アクセシビリティで ClaudeNotify を **OFF → ON** に切り替えてください（バイナリハッシュの変更により権限が無効化されます）。
 
 > `~/.claude/settings.json` の Hook 設定はそのまま保持されます。
 
@@ -63,12 +63,9 @@ cd claude-notify
 
 ### 1. macOSの権限設定
 
-**アクセシビリティ + 通知（初回起動時）：**
-```bash
-open /Applications/ClaudeNotify.app
-```
-- アクセシビリティ設定が自動的に開きます。`+`をクリックしてClaudeNotifyを追加してください
-- もう一度実行して通知の許可ダイアログを表示させ、許可してください
+**アプリを起動する（初回起動時）：**
+
+ClaudeNotify.app を起動するだけです — Finder でダブルクリックするか、Spotlight で開いてください。アプリはメニューバーに常駐し、デフォルトでログイン時に自動起動します。初回起動時にアクセシビリティと通知の権限リクエストが自動的に表示されます。
 
 **ターミナル自動化（Terminal.appを使用する場合）：**
 ```bash
@@ -155,13 +152,14 @@ Claude Codeフックが発火
 ```
 通知をクリック
     |
-    +-- macOSがClaudeNotifyを再起動
-    +-- didReceiveハンドラーが呼ばれる
+    +-- アプリはすでに起動中（メニューバー常駐）
+    +-- didReceiveハンドラーが直接呼ばれる
     |
     +-- セッションタイプを判定:
           |
           +-- /dev/tty*  -> Terminal AppleScript（ttyマッチング）
           +-- w*t*p*:*   -> iTerm AppleScript（GUIDマッチング）
+          +-- activate-only -> Warp（アプリ起動のみ）
           +-- (その他)    -> open -b <bundleId> <workspace>
 ```
 
@@ -209,6 +207,13 @@ open /Applications/ClaudeNotify.app --args \
 # フォーカスされたウィンドウのタイトルを取得（アクセシビリティ権限が必要）
 /Applications/ClaudeNotify.app/Contents/MacOS/ClaudeNotify \
   --get-window-title <bundleId>
+
+# フォーカスされたウィンドウのIDを取得（アクセシビリティ権限が必要）
+/Applications/ClaudeNotify.app/Contents/MacOS/ClaudeNotify \
+  --get-window-id <bundleId>
+
+# アクセシビリティ権限の確認/リクエスト
+/Applications/ClaudeNotify.app/Contents/MacOS/ClaudeNotify --setup
 
 # Terminal自動化権限をリクエスト
 open /Applications/ClaudeNotify.app --args --setup-terminal
@@ -263,7 +268,10 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
     ├── MacOS/
     │   └── ClaudeNotify        # Universal binary (arm64 + x86_64)
     └── Resources/
-        └── AppIcon.icns        # Bell icon
+        ├── AppIcon.icns        # Bell icon
+        ├── en.lproj/           # Localization markers
+        ├── ko.lproj/
+        └── ...
 
 Source (SPM project):
 ├── Package.swift               # SPM + Sparkle dependency

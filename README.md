@@ -53,9 +53,9 @@ cd claude-notify
 
 ### Upgrade
 
-1. Download the new DMG (or `git pull && ./build.sh`)
-2. Drag `ClaudeNotify.app` to `Applications` and replace the existing app
-3. Toggle ClaudeNotify **OFF → ON** in System Settings > Accessibility (binary hash changes invalidate the permission)
+The app supports **auto-update via Sparkle** — click "Check for Updates" in the menu bar to update. For source builds, run `git pull && ./build.sh`.
+
+After any update, toggle ClaudeNotify **OFF → ON** in System Settings > Accessibility (binary hash changes invalidate the permission).
 
 > Hook configuration in `~/.claude/settings.json` is preserved — no changes needed.
 
@@ -63,12 +63,9 @@ cd claude-notify
 
 ### 1. macOS Permissions
 
-**Accessibility + Notifications (first launch):**
-```bash
-open /Applications/ClaudeNotify.app
-```
-- Accessibility settings will open automatically. Click `+` and add ClaudeNotify
-- Run again to trigger the notification permission dialog. Allow it
+**Launch the app (first time):**
+
+Simply launch ClaudeNotify.app — double-click it in Finder or open it via Spotlight. The app stays resident in the menu bar and starts at login by default. First launch automatically triggers Accessibility and Notification permission prompts.
 
 **Terminal Automation (if using Terminal.app):**
 ```bash
@@ -156,13 +153,14 @@ Claude Code hook fires
 ```
 Notification clicked
     |
-    +-- macOS relaunches ClaudeNotify
-    +-- didReceive handler called
+    +-- App already running (menu bar resident)
+    +-- didReceive handler called directly
     |
     +-- Determine session type:
           |
           +-- /dev/tty*  -> Terminal AppleScript (tty matching)
           +-- w*t*p*:*   -> iTerm AppleScript (GUID matching)
+          +-- activate-only -> Warp (app activate only)
           +-- (other)    -> open -b <bundleId> <workspace>
 ```
 
@@ -210,6 +208,13 @@ open /Applications/ClaudeNotify.app --args \
 # Get focused window title (requires Accessibility)
 /Applications/ClaudeNotify.app/Contents/MacOS/ClaudeNotify \
   --get-window-title <bundleId>
+
+# Get focused window ID (requires Accessibility)
+/Applications/ClaudeNotify.app/Contents/MacOS/ClaudeNotify \
+  --get-window-id <bundleId>
+
+# Check/request Accessibility permission
+/Applications/ClaudeNotify.app/Contents/MacOS/ClaudeNotify --setup
 
 # Request Terminal automation permission
 open /Applications/ClaudeNotify.app --args --setup-terminal
@@ -264,7 +269,10 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
     ├── MacOS/
     │   └── ClaudeNotify        # Universal binary (arm64 + x86_64)
     └── Resources/
-        └── AppIcon.icns        # Bell icon
+        ├── AppIcon.icns        # Bell icon
+        ├── en.lproj/           # Localization markers
+        ├── ko.lproj/
+        └── ...
 
 Source (SPM project):
 ├── Package.swift               # SPM + Sparkle dependency

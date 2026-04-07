@@ -53,9 +53,9 @@ cd claude-notify
 
 ### Nâng cấp
 
-1. Tải DMG mới (hoặc `git pull && ./build.sh`)
-2. Kéo `ClaudeNotify.app` vào `Applications` và thay thế ứng dụng hiện có
-3. Chuyển đổi ClaudeNotify **OFF → ON** trong Cài đặt Hệ thống > Trợ năng (thay đổi hash nhị phân sẽ vô hiệu hóa quyền)
+Ứng dụng hỗ trợ **tự động cập nhật qua Sparkle** — nhấp "Kiểm tra cập nhật" trên thanh menu để cập nhật. Với bản biên dịch từ mã nguồn, chạy `git pull && ./build.sh`.
+
+Sau mỗi lần cập nhật, hãy chuyển đổi ClaudeNotify **OFF → ON** trong Cài đặt Hệ thống > Trợ năng (thay đổi hash nhị phân sẽ vô hiệu hóa quyền).
 
 > Cấu hình hook trong `~/.claude/settings.json` được giữ nguyên — không cần thay đổi.
 
@@ -63,12 +63,9 @@ cd claude-notify
 
 ### 1. Quyền trên macOS
 
-**Accessibility + Notifications (lần khởi chạy đầu tiên):**
-```bash
-open /Applications/ClaudeNotify.app
-```
-- Cài đặt Accessibility sẽ tự động mở. Nhấp `+` và thêm ClaudeNotify
-- Chạy lại để kích hoạt hộp thoại cấp quyền thông báo. Cho phép
+**Khởi chạy ứng dụng (lần đầu tiên):**
+
+Chỉ cần mở ClaudeNotify.app — nhấp đúp trong Finder hoặc mở qua Spotlight. Ứng dụng thường trú trên thanh menu và mặc định khởi động cùng hệ thống. Lần đầu khởi chạy sẽ tự động hiển thị yêu cầu cấp quyền Accessibility và Thông báo.
 
 **Terminal Automation (nếu sử dụng Terminal.app):**
 ```bash
@@ -153,16 +150,17 @@ Claude Code hook kích hoạt
 ### Luồng điều hướng khi nhấp
 
 ```
-Notification clicked
+Nhấp vào thông báo
     |
-    +-- macOS relaunches ClaudeNotify
-    +-- didReceive handler called
+    +-- Ứng dụng đã chạy (thường trú trên thanh menu)
+    +-- Handler didReceive được gọi trực tiếp
     |
-    +-- Determine session type:
+    +-- Xác định loại phiên:
           |
-          +-- /dev/tty*  -> Terminal AppleScript (tty matching)
-          +-- w*t*p*:*   -> iTerm AppleScript (GUID matching)
-          +-- (other)    -> open -b <bundleId> <workspace>
+          +-- /dev/tty*  -> Terminal AppleScript (khớp tty)
+          +-- w*t*p*:*   -> iTerm AppleScript (khớp GUID)
+          +-- activate-only -> Warp (chỉ kích hoạt ứng dụng)
+          +-- (khác)     -> open -b <bundleId> <workspace>
 ```
 
 ### Điều hướng theo từng Terminal
@@ -209,6 +207,13 @@ open /Applications/ClaudeNotify.app --args \
 # Lấy tiêu đề cửa sổ đang focus (yêu cầu Accessibility)
 /Applications/ClaudeNotify.app/Contents/MacOS/ClaudeNotify \
   --get-window-title <bundleId>
+
+# Lấy ID cửa sổ đang focus (yêu cầu Accessibility)
+/Applications/ClaudeNotify.app/Contents/MacOS/ClaudeNotify \
+  --get-window-id <bundleId>
+
+# Kiểm tra/yêu cầu quyền Accessibility
+/Applications/ClaudeNotify.app/Contents/MacOS/ClaudeNotify --setup
 
 # Yêu cầu quyền tự động hóa Terminal
 open /Applications/ClaudeNotify.app --args --setup-terminal
@@ -263,7 +268,10 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
     ├── MacOS/
     │   └── ClaudeNotify        # Universal binary (arm64 + x86_64)
     └── Resources/
-        └── AppIcon.icns        # Biểu tượng chuông
+        ├── AppIcon.icns        # Biểu tượng chuông
+        ├── en.lproj/           # Localization markers
+        ├── ko.lproj/
+        └── ...
 
 Source (SPM project):
 ├── Package.swift               # SPM + Sparkle dependency

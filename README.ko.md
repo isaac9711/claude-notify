@@ -53,9 +53,9 @@ cd claude-notify
 
 ### Upgrade (업그레이드)
 
-1. 새 DMG 다운로드 (또는 `git pull && ./build.sh`)
-2. `ClaudeNotify.app`을 `Applications`에 덮어쓰기
-3. 시스템 설정 > 손쉬운 사용에서 ClaudeNotify를 **OFF → ON** 토글 (바이너리 해시 변경으로 권한 재설정 필요)
+앱은 **Sparkle 자동 업데이트**를 지원합니다 — 메뉴 바에서 "업데이트 확인"을 클릭하면 업데이트할 수 있습니다. 소스 빌드의 경우 `git pull && ./build.sh`를 실행하세요.
+
+업데이트 후에는 시스템 설정 > 손쉬운 사용에서 ClaudeNotify를 **OFF → ON** 토글해야 합니다 (바이너리 해시 변경으로 권한 재설정 필요).
 
 > `~/.claude/settings.json`의 Hook 설정은 유지됩니다.
 
@@ -63,12 +63,9 @@ cd claude-notify
 
 ### 1. macOS 권한 설정
 
-**손쉬운 사용 + 알림 허용 (첫 실행):**
-```bash
-open /Applications/ClaudeNotify.app
-```
-- 손쉬운 사용 설정 화면이 자동으로 열립니다. `+` 버튼으로 ClaudeNotify 추가
-- 이후 다시 실행하면 알림 권한 팝업이 뜹니다. 허용해주세요
+**앱 실행 (최초 실행):**
+
+ClaudeNotify.app을 실행하기만 하면 됩니다 — Finder에서 더블클릭하거나 Spotlight로 열면 됩니다. 앱은 메뉴 바에 상주하며 기본적으로 로그인 시 자동 시작됩니다. 최초 실행 시 손쉬운 사용 및 알림 권한 요청 팝업이 자동으로 나타납니다.
 
 **Terminal 자동화 권한 (Terminal.app 사용 시):**
 ```bash
@@ -155,13 +152,14 @@ Claude Code hook 실행
 ```
 알림 클릭
     |
-    +-- macOS가 ClaudeNotify 재실행
-    +-- didReceive 핸들러 호출
+    +-- 앱이 이미 실행 중 (메뉴 바 상주)
+    +-- didReceive 핸들러가 직접 호출됨
     |
     +-- 세션 타입 판별:
           |
           +-- /dev/tty*  -> Terminal AppleScript (tty 매칭)
           +-- w*t*p*:*   -> iTerm AppleScript (GUID 매칭)
+          +-- activate-only -> Warp (앱 활성화만)
           +-- (그 외)     -> open -b <bundleId> <workspace>
 ```
 
@@ -209,6 +207,13 @@ open /Applications/ClaudeNotify.app --args \
 # 현재 포커스된 창 제목 조회 (Accessibility 필요)
 /Applications/ClaudeNotify.app/Contents/MacOS/ClaudeNotify \
   --get-window-title <bundleId>
+
+# 현재 포커스된 창 ID 조회 (Accessibility 필요)
+/Applications/ClaudeNotify.app/Contents/MacOS/ClaudeNotify \
+  --get-window-id <bundleId>
+
+# Accessibility 권한 확인/요청
+/Applications/ClaudeNotify.app/Contents/MacOS/ClaudeNotify --setup
 
 # Terminal 자동화 권한 요청
 open /Applications/ClaudeNotify.app --args --setup-terminal
@@ -263,7 +268,10 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
     ├── MacOS/
     │   └── ClaudeNotify        # Universal binary (arm64 + x86_64)
     └── Resources/
-        └── AppIcon.icns        # Bell icon
+        ├── AppIcon.icns        # Bell icon
+        ├── en.lproj/           # Localization markers
+        ├── ko.lproj/
+        └── ...
 
 Source (SPM project):
 ├── Package.swift               # SPM + Sparkle dependency
