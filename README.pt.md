@@ -14,6 +14,7 @@ Clique em uma notificação para navegar até a **janela e aba exatas** onde o C
 - **Histórico de notificações** — as últimas 10 notificações são salvas em memória, acessíveis pela barra de menus
 - **Entrega via IPC** — quando o aplicativo já está em execução, novas notificações são entregues via `DistributedNotificationCenter` sem lançar um novo processo
 - **Iniciar no login** — ativado por padrão, configurável em Ajustes
+- **Configuração automática de hooks** — assistente no primeiro início instala os hooks com prévia das diferenças; detecta e solicita atualizações após upgrades do aplicativo
 - Notificações nativas do macOS (`UNUserNotificationCenter`)
 - Ícone do aplicativo de origem + nome do projeto exibidos na notificação
 - Navegação por clique até a janela/aba exata:
@@ -74,6 +75,12 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
 Permita quando o sistema solicitar "ClaudeNotify wants to control Terminal".
 
 ### 2. Configuração de Hook do Claude Code
+
+#### Configuração automática (recomendado)
+
+Na primeira execução, o ClaudeNotify solicita que você selecione seu arquivo `settings.json` e instala os hooks automaticamente. Uma prévia das diferenças mostra exatamente o que será alterado antes de aplicar. Você também pode instalar ou desinstalar hooks posteriormente pela barra de menus: **Ajustes > Hook > Instalar/Desinstalar Hooks, Alterar arquivo de configuração**.
+
+#### Configuração manual
 
 Adicione à seção `hooks` do `~/.claude/settings.json`:
 
@@ -190,6 +197,7 @@ O ClaudeNotify fica residente na barra de menus como um ícone de sino (`􀋚`).
   - Iniciar no Login (padrão: ATIVADO)
   - Atualizações Automáticas (padrão: ATIVADO)
   - Idioma — escolha detecção automática do sistema ou um dos 7 idiomas
+  - Hook > Instalar/Desinstalar Hooks, Alterar arquivo de configuração
 - **Sair**
 
 ## Opções de CLI

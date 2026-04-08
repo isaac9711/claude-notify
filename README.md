@@ -14,6 +14,7 @@ Click a notification to navigate to the **exact window and tab** where Claude Co
 - **Notification history** — last 10 notifications stored in memory, viewable from the menu bar
 - **IPC delivery** — when the app is already running, new notifications arrive via `DistributedNotificationCenter` instead of launching a new process
 - **Launch at Login** — enabled by default, toggleable in Settings
+- **Automatic hook setup** — first-launch wizard installs hooks with a diff preview; detects and prompts for updates after app upgrades
 - Native macOS notifications (`UNUserNotificationCenter`)
 - Source app icon + project name displayed in notification
 - Click-to-navigate to the exact window/tab:
@@ -74,6 +75,12 @@ open /Applications/ClaudeNotify.app --args --setup-terminal
 Allow when prompted with "ClaudeNotify wants to control Terminal".
 
 ### 2. Claude Code Hook Configuration
+
+#### Automatic Setup (Recommended)
+
+On first launch, ClaudeNotify prompts you to select your `settings.json` file and installs hooks automatically. A diff preview shows exactly what will be changed before applying. You can also install or uninstall hooks later from the menu bar: **Settings > Hook > Install/Uninstall Hooks, Change Settings File**.
+
+#### Manual Setup
 
 Add to the `hooks` section of `~/.claude/settings.json`:
 
@@ -191,6 +198,7 @@ ClaudeNotify lives in the menu bar as a bell icon (`􀋚`). Click it to access:
   - Launch at Login (default: ON)
   - Auto Updates (default: ON)
   - Language — choose from system auto-detect or one of 7 languages
+  - Hook > Install/Uninstall Hooks, Change Settings File
 - **Quit**
 
 ## CLI Options
