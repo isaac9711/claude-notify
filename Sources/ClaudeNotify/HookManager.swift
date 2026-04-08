@@ -64,20 +64,10 @@ class HookManager {
             return (true, L10n.get("hooksAlreadyInstalled"))
         }
 
-        let notificationCommand = "N=/Applications/ClaudeNotify.app; S=; if [ \"$__CFBundleIdentifier\" = \"com.googlecode.iterm2\" ]; then S=\"$ITERM_SESSION_ID\"; elif [ \"$__CFBundleIdentifier\" = \"com.apple.Terminal\" ]; then S=\"/dev/$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')\"; elif [ \"$__CFBundleIdentifier\" = \"dev.warp.Warp-Stable\" ]; then S=\"activate-only\"; fi; W=$($N/Contents/MacOS/ClaudeNotify --get-window-id \"$__CFBundleIdentifier\" 2>/dev/null); open $N --args -title 'Claude Code' -message \"Waiting for input — $(basename \"$PWD\")\" -sound default -activate \"$__CFBundleIdentifier\" -workspace \"$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null | xargs dirname 2>/dev/null || echo $PWD)\" -session \"$S\" -windowId \"$W\""
-
-        let stopCommand = "N=/Applications/ClaudeNotify.app; S=; if [ \"$__CFBundleIdentifier\" = \"com.googlecode.iterm2\" ]; then S=\"$ITERM_SESSION_ID\"; elif [ \"$__CFBundleIdentifier\" = \"com.apple.Terminal\" ]; then S=\"/dev/$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')\"; elif [ \"$__CFBundleIdentifier\" = \"dev.warp.Warp-Stable\" ]; then S=\"activate-only\"; fi; W=$($N/Contents/MacOS/ClaudeNotify --get-window-id \"$__CFBundleIdentifier\" 2>/dev/null); open $N --args -title 'Claude Code' -message \"Task complete — $(basename \"$PWD\")\" -sound default -activate \"$__CFBundleIdentifier\" -workspace \"$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null | xargs dirname 2>/dev/null || echo $PWD)\" -session \"$S\" -windowId \"$W\""
-
         var hooks = settings["hooks"] as? [String: Any] ?? [:]
 
-        hooks["Notification"] = [[
-            "matcher": "",
-            "hooks": [["type": "command", "command": notificationCommand]]
-        ]]
-
-        hooks["Stop"] = [[
-            "hooks": [["type": "command", "command": stopCommand]]
-        ]]
+        hooks["Notification"] = [buildNotificationHookEntry()]
+        hooks["Stop"] = [buildStopHookEntry()]
 
         settings["hooks"] = hooks
 
@@ -137,6 +127,73 @@ class HookManager {
             }
             return false
         }
+    }
+
+    // MARK: - Diff Preview
+
+    func previewInstall() -> (old: String, new: String)? {
+        guard let path = settingsPath else { return nil }
+        let oldSettings = readSettings(at: path)
+        let oldJSON = prettyJSON(oldSettings)
+
+        var newSettings = oldSettings
+        var hooks = newSettings["hooks"] as? [String: Any] ?? [:]
+        hooks["Notification"] = [buildNotificationHookEntry()]
+        hooks["Stop"] = [buildStopHookEntry()]
+        newSettings["hooks"] = hooks
+        let newJSON = prettyJSON(newSettings)
+
+        return (oldJSON, newJSON)
+    }
+
+    func previewUninstall() -> (old: String, new: String)? {
+        guard let path = settingsPath else { return nil }
+        let oldSettings = readSettings(at: path)
+        let oldJSON = prettyJSON(oldSettings)
+
+        var newSettings = oldSettings
+        if var hooks = newSettings["hooks"] as? [String: Any] {
+            for key in ["Notification", "Stop"] {
+                if var entries = hooks[key] as? [[String: Any]] {
+                    entries.removeAll { entry in
+                        if let innerHooks = entry["hooks"] as? [[String: Any]] {
+                            return innerHooks.contains { ($0["command"] as? String)?.contains("ClaudeNotify") == true }
+                        }
+                        return false
+                    }
+                    if entries.isEmpty { hooks.removeValue(forKey: key) } else { hooks[key] = entries }
+                }
+            }
+            if hooks.isEmpty { newSettings.removeValue(forKey: "hooks") } else { newSettings["hooks"] = hooks }
+        }
+        let newJSON = prettyJSON(newSettings)
+
+        return (oldJSON, newJSON)
+    }
+
+    private func prettyJSON(_ dict: [String: Any]) -> String {
+        guard let data = try? JSONSerialization.data(withJSONObject: dict, options: [.prettyPrinted, .sortedKeys]),
+              let str = String(data: data, encoding: .utf8)
+        else { return "{}" }
+        return str
+    }
+
+    // MARK: - Hook Entries
+
+    private func buildNotificationHookEntry() -> [String: Any] {
+        ["matcher": "", "hooks": [["type": "command", "command": notificationCommand]]]
+    }
+
+    private func buildStopHookEntry() -> [String: Any] {
+        ["hooks": [["type": "command", "command": stopCommand]]]
+    }
+
+    private var notificationCommand: String {
+        "N=/Applications/ClaudeNotify.app; S=; if [ \"$__CFBundleIdentifier\" = \"com.googlecode.iterm2\" ]; then S=\"$ITERM_SESSION_ID\"; elif [ \"$__CFBundleIdentifier\" = \"com.apple.Terminal\" ]; then S=\"/dev/$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')\"; elif [ \"$__CFBundleIdentifier\" = \"dev.warp.Warp-Stable\" ]; then S=\"activate-only\"; fi; W=$($N/Contents/MacOS/ClaudeNotify --get-window-id \"$__CFBundleIdentifier\" 2>/dev/null); open $N --args -title 'Claude Code' -message \"Waiting for input — $(basename \"$PWD\")\" -sound default -activate \"$__CFBundleIdentifier\" -workspace \"$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null | xargs dirname 2>/dev/null || echo $PWD)\" -session \"$S\" -windowId \"$W\""
+    }
+
+    private var stopCommand: String {
+        "N=/Applications/ClaudeNotify.app; S=; if [ \"$__CFBundleIdentifier\" = \"com.googlecode.iterm2\" ]; then S=\"$ITERM_SESSION_ID\"; elif [ \"$__CFBundleIdentifier\" = \"com.apple.Terminal\" ]; then S=\"/dev/$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')\"; elif [ \"$__CFBundleIdentifier\" = \"dev.warp.Warp-Stable\" ]; then S=\"activate-only\"; fi; W=$($N/Contents/MacOS/ClaudeNotify --get-window-id \"$__CFBundleIdentifier\" 2>/dev/null); open $N --args -title 'Claude Code' -message \"Task complete — $(basename \"$PWD\")\" -sound default -activate \"$__CFBundleIdentifier\" -workspace \"$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null | xargs dirname 2>/dev/null || echo $PWD)\" -session \"$S\" -windowId \"$W\""
     }
 
     // MARK: - JSON Read/Write

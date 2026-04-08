@@ -48,22 +48,28 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             alert.addButton(withTitle: L10n.get("skip"))
             if alert.runModal() == .alertFirstButtonReturn {
                 if hook.selectSettingsFile() {
+                    if let preview = hook.previewInstall() {
+                        guard DiffPreview.showConfirmation(
+                            title: L10n.get("installHooks"),
+                            oldJSON: preview.old,
+                            newJSON: preview.new
+                        ) else { rebuildMenu(); return }
+                    }
                     let result = hook.installHooks()
                     showHookResult(result.message)
                 }
             }
         } else if hook.needsHookUpdate {
             // App updated, hooks need refresh
-            let alert = NSAlert()
-            alert.messageText = "ClaudeNotify"
-            alert.informativeText = L10n.get("hookUpdateAvailable")
-            alert.alertStyle = .informational
-            alert.addButton(withTitle: L10n.get("update"))
-            alert.addButton(withTitle: L10n.get("skip"))
-            if alert.runModal() == .alertFirstButtonReturn {
-                let result = hook.installHooks()
-                showHookResult(result.message)
+            if let preview = hook.previewInstall() {
+                guard DiffPreview.showConfirmation(
+                    title: L10n.get("hookUpdateAvailable"),
+                    oldJSON: preview.old,
+                    newJSON: preview.new
+                ) else { rebuildMenu(); return }
             }
+            let result = hook.installHooks()
+            showHookResult(result.message)
         }
         rebuildMenu()
     }
@@ -441,13 +447,28 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         if !hook.isConfigured {
             guard hook.selectSettingsFile() else { return }
         }
+        if let preview = hook.previewInstall() {
+            guard DiffPreview.showConfirmation(
+                title: L10n.get("installHooks"),
+                oldJSON: preview.old,
+                newJSON: preview.new
+            ) else { return }
+        }
         let result = hook.installHooks()
         showHookResult(result.message)
         rebuildMenu()
     }
 
     @objc private func uninstallHooksAction() {
-        let result = HookManager.shared.uninstallHooks()
+        let hook = HookManager.shared
+        if let preview = hook.previewUninstall() {
+            guard DiffPreview.showConfirmation(
+                title: L10n.get("uninstallHooks"),
+                oldJSON: preview.old,
+                newJSON: preview.new
+            ) else { return }
+        }
+        let result = hook.uninstallHooks()
         showHookResult(result.message)
         rebuildMenu()
     }
