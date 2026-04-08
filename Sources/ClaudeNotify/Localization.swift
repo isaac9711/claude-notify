@@ -278,6 +278,15 @@ enum L10n {
             "vi": "Hủy",
             "pt": "Cancelar",
         ],
+        "hooksMissing": [
+            "en": "Claude Code notification hooks are not installed. Would you like to install them?",
+            "ko": "Claude Code 알림 Hook이 설치되어 있지 않습니다. 설치하시겠습니까?",
+            "zh": "Claude Code 通知 Hook 未安装。是否安装？",
+            "ja": "Claude Code 通知 Hook がインストールされていません。インストールしますか？",
+            "es": "Los Hooks de notificación de Claude Code no están instalados. ¿Desea instalarlos?",
+            "vi": "Hook thông báo Claude Code chưa được cài đặt. Bạn có muốn cài đặt không?",
+            "pt": "Os Hooks de notificação do Claude Code não estão instalados. Deseja instalá-los?",
+        ],
         "hookError": [
             "en": "Failed to update settings file.",
             "ko": "설정 파일 업데이트에 실패했습니다.",

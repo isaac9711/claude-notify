@@ -70,6 +70,25 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             }
             let result = hook.installHooks()
             showHookResult(result.message)
+        } else if hook.isConfigured && !hook.hasHooksInstalled() {
+            // Settings path configured but hooks missing (removed externally)
+            let alert = NSAlert()
+            alert.messageText = "ClaudeNotify"
+            alert.informativeText = L10n.get("hooksMissing")
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: L10n.get("install"))
+            alert.addButton(withTitle: L10n.get("skip"))
+            if alert.runModal() == .alertFirstButtonReturn {
+                if let preview = hook.previewInstall() {
+                    guard DiffPreview.showConfirmation(
+                        title: L10n.get("installHooks"),
+                        oldJSON: preview.old,
+                        newJSON: preview.new
+                    ) else { rebuildMenu(); return }
+                }
+                let result = hook.installHooks()
+                showHookResult(result.message)
+            }
         }
         rebuildMenu()
     }
