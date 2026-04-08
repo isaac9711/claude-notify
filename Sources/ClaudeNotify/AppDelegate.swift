@@ -179,6 +179,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             installItem.target = self
             hookMenu.addItem(installItem)
         }
+        hookMenu.addItem(.separator())
+        let wsLabel = NSMenuItem(title: L10n.get("workspaceMode"), action: nil, keyEquivalent: "")
+        wsLabel.isEnabled = false
+        hookMenu.addItem(wsLabel)
+
+        let baseItem = NSMenuItem(title: L10n.get("workspaceBase"), action: #selector(setWorkspaceBase), keyEquivalent: "")
+        baseItem.target = self
+        baseItem.state = hook.workspaceMode == "base" ? .on : .off
+        hookMenu.addItem(baseItem)
+
+        let worktreeItem = NSMenuItem(title: L10n.get("workspaceWorktree"), action: #selector(setWorkspaceWorktree), keyEquivalent: "")
+        worktreeItem.target = self
+        worktreeItem.state = hook.workspaceMode == "worktree" ? .on : .off
+        hookMenu.addItem(worktreeItem)
+
+        hookMenu.addItem(.separator())
         let changePathItem = NSMenuItem(title: L10n.get("changeSettingsPath"), action: #selector(changeSettingsPathAction), keyEquivalent: "")
         changePathItem.target = self
         hookMenu.addItem(changePathItem)
@@ -489,6 +505,32 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         }
         let result = hook.uninstallHooks()
         showHookResult(result.message)
+        rebuildMenu()
+    }
+
+    @objc private func setWorkspaceBase() { changeWorkspaceMode("base") }
+    @objc private func setWorkspaceWorktree() { changeWorkspaceMode("worktree") }
+
+    private func changeWorkspaceMode(_ mode: String) {
+        let hook = HookManager.shared
+        hook.workspaceMode = mode
+        if hook.hasHooksInstalled() {
+            // Reinstall hooks with new workspace mode
+            if let preview = hook.previewInstall() {
+                guard DiffPreview.showConfirmation(
+                    title: L10n.get("workspaceMode"),
+                    oldJSON: preview.old,
+                    newJSON: preview.new
+                ) else {
+                    // Revert mode if user cancels
+                    hook.workspaceMode = mode == "base" ? "worktree" : "base"
+                    rebuildMenu()
+                    return
+                }
+            }
+            let result = hook.installHooks()
+            showHookResult(result.message)
+        }
         rebuildMenu()
     }
 
