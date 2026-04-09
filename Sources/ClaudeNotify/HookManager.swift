@@ -52,21 +52,30 @@ class HookManager {
 
     // MARK: - Hook Installation
 
-    func installHooks() -> (success: Bool, message: String) {
+    func installHooks(force: Bool = false) -> (success: Bool, message: String) {
         guard let path = settingsPath else { return (false, L10n.get("hookError")) }
 
         var settings = readSettings(at: path)
 
-        // Check if already installed
-        if let hooks = settings["hooks"] as? [String: Any],
-           let notification = hooks["Notification"] as? [[String: Any]],
-           notification.contains(where: { entry in
-               if let innerHooks = entry["hooks"] as? [[String: Any]] {
-                   return innerHooks.contains { ($0["command"] as? String)?.contains("ClaudeNotify") == true }
-               }
-               return false
-           }) {
+        // Check if already installed (skip check when force updating)
+        if !force, hasHooksInstalled(in: settings) {
             return (true, L10n.get("hooksAlreadyInstalled"))
+        }
+
+        // Remove existing ClaudeNotify hooks before (re)installing
+        if var hooks = settings["hooks"] as? [String: Any] {
+            for key in ["Notification", "Stop"] {
+                if var entries = hooks[key] as? [[String: Any]] {
+                    entries.removeAll { entry in
+                        if let innerHooks = entry["hooks"] as? [[String: Any]] {
+                            return innerHooks.contains { ($0["command"] as? String)?.contains("ClaudeNotify") == true }
+                        }
+                        return false
+                    }
+                    if entries.isEmpty { hooks.removeValue(forKey: key) } else { hooks[key] = entries }
+                }
+            }
+            settings["hooks"] = hooks
         }
 
         var hooks = settings["hooks"] as? [String: Any] ?? [:]
@@ -124,6 +133,10 @@ class HookManager {
     func hasHooksInstalled() -> Bool {
         guard let path = settingsPath else { return false }
         let settings = readSettings(at: path)
+        return hasHooksInstalled(in: settings)
+    }
+
+    private func hasHooksInstalled(in settings: [String: Any]) -> Bool {
         guard let hooks = settings["hooks"] as? [String: Any],
               let notification = hooks["Notification"] as? [[String: Any]] else { return false }
         return notification.contains { entry in

@@ -68,7 +68,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                     newJSON: preview.new
                 ) else { rebuildMenu(); return }
             }
-            let result = hook.installHooks()
+            let result = hook.installHooks(force: true)
             showHookResult(result.message)
         } else if hook.isConfigured && !hook.hasHooksInstalled() {
             // Settings path configured but hooks missing (removed externally)
@@ -528,7 +528,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                     return
                 }
             }
-            let result = hook.installHooks()
+            let result = hook.installHooks(force: true)
             showHookResult(result.message)
         }
         rebuildMenu()
@@ -539,7 +539,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         let hadHooks = hook.hasHooksInstalled()
         guard hook.selectSettingsFile() else { return }
         if hadHooks {
-            let result = hook.installHooks()
+            let result = hook.installHooks(force: true)
             showHookResult(result.message)
         }
         rebuildMenu()
