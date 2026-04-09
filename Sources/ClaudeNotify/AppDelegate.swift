@@ -317,6 +317,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         let windowIdStr = userInfo["windowId"] as? String ?? ""
 
         activateApp(bundleId: bundleId, workspace: workspace, session: session, windowIdStr: windowIdStr)
+
+        // Deactivate ClaudeNotify so target app gets focus
+        NSApp.hide(nil)
         completionHandler()
     }
 
@@ -324,6 +327,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
     func activateApp(bundleId: String, workspace: String, session: String, windowIdStr: String) {
         guard !bundleId.isEmpty else { return }
+
 
         var windowID: CGWindowID = 0
         var windowPID: pid_t = 0
