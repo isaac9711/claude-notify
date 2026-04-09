@@ -361,10 +361,60 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             try? task.run()
             task.waitUntilExit()
         } else if !session.isEmpty && session.contains(":") && !session.hasPrefix("/") {
-            // iTerm: Space switch + select tab by session GUID
-            if windowID != 0 { activateWindow(windowID: windowID, pid: windowPID); usleep(200000) }
+            // iTerm: find correct window by GUID → Space switch → select tab
             let guid = String(session.split(separator: ":").last ?? "")
-            let script = """
+
+            // Step 1: AppleScript to get the window name containing the session
+            let findScript = """
+            tell application "iTerm2"
+                repeat with w in windows
+                    repeat with t in tabs of w
+                        repeat with s in sessions of t
+                            if unique ID of s is "\(guid)" then
+                                return name of w
+                            end if
+                        end repeat
+                    end repeat
+                end repeat
+            end tell
+            """
+            var findError: NSDictionary?
+            let findResult = NSAppleScript(source: findScript)?.executeAndReturnError(&findError)
+            let targetName = findResult?.stringValue ?? ""
+
+            // Step 2: Find correct CGWindowID via AX API (works without Screen Recording permission)
+            var activated = false
+            if !targetName.isEmpty,
+               let itermApp = NSRunningApplication.runningApplications(withBundleIdentifier: bundleId).first {
+                let pid = itermApp.processIdentifier
+                let axApp = AXUIElementCreateApplication(pid)
+                var windowsRef: CFTypeRef?
+                AXUIElementCopyAttributeValue(axApp, kAXWindowsAttribute as CFString, &windowsRef)
+                if let windows = windowsRef as? [AXUIElement] {
+                    for window in windows {
+                        var titleRef: CFTypeRef?
+                        AXUIElementCopyAttributeValue(window, kAXTitleAttribute as CFString, &titleRef)
+                        let title = titleRef as? String ?? ""
+                        if title == targetName {
+                            var wid: CGWindowID = 0
+                            if _AXUIElementGetWindow(window, &wid) == .success, wid != 0 {
+                                activateWindow(windowID: wid, pid: pid)
+                                usleep(200000)
+                                activated = true
+                                break
+                            }
+                        }
+                    }
+                }
+            }
+            if !activated && windowID != 0 {
+                // Fallback to captured windowID
+                activateWindow(windowID: windowID, pid: windowPID)
+                usleep(200000)
+            }
+
+            // Step 3: AppleScript to select the correct tab
+            let selectScript = """
             tell application "iTerm2"
                 repeat with w in windows
                     repeat with t in tabs of w
@@ -379,8 +429,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                 end repeat
             end tell
             """
-            var errorInfo: NSDictionary?
-            NSAppleScript(source: script)?.executeAndReturnError(&errorInfo)
+            var selectError: NSDictionary?
+            NSAppleScript(source: selectScript)?.executeAndReturnError(&selectError)
         } else if session == "activate-only" {
             // Warp: just activate app
             let task = Process()
