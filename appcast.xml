@@ -13,9 +13,9 @@
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <enclosure
                 url="https://github.com/isaac9711/claude-notify/releases/download/v1.1.0/ClaudeNotify-v1.1.0.zip"
-                length="1299725"
+                length="1300149"
                 type="application/octet-stream"
-                sparkle:edSignature="3LyFt/9xc3lDiIQpKBVVpLHXuYRzzjSAttY7pPGoIpennRdVloJak4Yzz0PakRxxf7u5dITttXXhwUmFoqL6AQ=="
+                sparkle:edSignature="I1/yxKTwT2OA3TtVmi9qdeuejy/8qoI0CTdurOJzxDF74GgMZtVkRIux4cBsepJexnYNo9n8RQPFRtevC+KiAQ=="
             />
         </item>
     </channel>
