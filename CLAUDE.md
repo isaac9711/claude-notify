@@ -65,14 +65,43 @@ appcast.xml                      — Sparkle 업데이트 피드
 - `activate-only` → Warp: 앱 활성화만
 - 그 외 → `open -b <bundleId> <workspace>` (Cursor, VS Code 등)
 
+## Versioning
+
+빌드 번호 분리 체계:
+
+- `CFBundleShortVersionString` — 마케팅 버전 (예: `1.1`). 큰 기능 추가 시만 변경.
+- `CFBundleVersion` — 빌드 번호 (예: `20260413`). `build.sh` 실행 시 날짜 기반 자동 생성.
+- `Info.plist`에 `BUILD_NUMBER` 플레이스홀더, `build.sh`가 `sed`로 치환.
+- Sparkle은 `CFBundleVersion` (빌드 번호)으로 업데이트 비교, 사용자에게는 마케팅 버전만 표시.
+- 빌드 번호 고정: `CLAUDE_NOTIFY_BUILD_NUMBER=20260413 ./build.sh`
+
 ## Release
 
-DMG 생성에 `create-dmg` 사용:
+`release.sh`로 전체 릴리즈 파이프라인 자동화:
+
+```bash
+# 버그 수정 릴리즈 (마케팅 버전 유지)
+./release.sh
+
+# 새 기능 릴리즈 (마케팅 버전 변경)
+./release.sh --version 1.2
+
+# 특정 태그명 지정
+./release.sh --version 1.2 --tag v1.2.0
+```
+
+`release.sh`가 수행하는 작업:
+1. 빌드 번호 생성 (YYYYMMDD)
+2. `build.sh` 실행 (빌드 번호 고정)
+3. 빌드 검증 (버전 불일치 방지)
+4. zip 생성 + EdDSA 서명 (`sign_update`)
+5. `appcast.xml` 업데이트 (버전, 서명, URL)
+6. git 커밋 + push
+7. GitHub Release 생성 + zip 업로드
+
+수동 DMG 생성 (선택, 추가 배포 채널용):
 
 ```bash
 brew install create-dmg
-# build.sh 실행 후
-create-dmg --volname "ClaudeNotify" --background <bg.png> --window-size 540 380 --icon-size 80 --icon "ClaudeNotify.app" 130 170 --icon ".claude" 410 170 ClaudeNotify.dmg <staging-dir>/
+create-dmg --volname "ClaudeNotify" --window-size 540 380 --icon-size 80 --icon "ClaudeNotify.app" 130 170 --app-drop-link 410 170 ClaudeNotify.dmg <staging-dir>/
 ```
-
-릴리즈 시 `appcast.xml` 업데이트 필요 (Sparkle `generate_appcast` 또는 수동 편집).
