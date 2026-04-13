@@ -55,10 +55,11 @@ rm -rf "${FRAMEWORKS_DIR}/Sparkle.framework"
 cp -R "${SPARKLE_FW}" "${FRAMEWORKS_DIR}/"
 
 # Code sign (inside-out: XPC services → framework → app bundle)
+# --preserve-metadata=entitlements keeps Sparkle's original XPC entitlements needed for auto-update
 echo "Code signing..."
-codesign --force --sign - "${FRAMEWORKS_DIR}/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc"
-codesign --force --sign - "${FRAMEWORKS_DIR}/Sparkle.framework/Versions/B/XPCServices/Installer.xpc"
-codesign --force --sign - "${FRAMEWORKS_DIR}/Sparkle.framework"
+codesign --force --sign - --preserve-metadata=entitlements "${FRAMEWORKS_DIR}/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc"
+codesign --force --sign - --preserve-metadata=entitlements "${FRAMEWORKS_DIR}/Sparkle.framework/Versions/B/XPCServices/Installer.xpc"
+codesign --force --sign - --preserve-metadata=entitlements "${FRAMEWORKS_DIR}/Sparkle.framework"
 codesign --force --sign - --options runtime \
     --entitlements "${SCRIPT_DIR}/Resources/ClaudeNotify.entitlements" \
     "${APP_DIR}"
