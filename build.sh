@@ -33,8 +33,9 @@ X86_BIN="${SCRIPT_DIR}/.build/x86_64-apple-macosx/release/${APP_NAME}"
 echo "Creating universal binary..."
 lipo -create "${ARM64_BIN}" "${X86_BIN}" -output "${MACOS_DIR}/${APP_NAME}"
 
-# Copy resources + set build number (YYYYMMDD)
-BUILD_NUMBER=$(date +%Y%m%d)
+# Copy resources + set build number
+# Use explicit build number if provided, otherwise YYYYMMDD
+BUILD_NUMBER="${CLAUDE_NOTIFY_BUILD_NUMBER:-$(date +%Y%m%d)}"
 sed "s/BUILD_NUMBER/${BUILD_NUMBER}/" "${SCRIPT_DIR}/Resources/Info.plist" > "${CONTENTS_DIR}/Info.plist"
 cp "${SCRIPT_DIR}/Resources/AppIcon.icns" "${RESOURCES_DIR}/"
 echo "Build number: ${BUILD_NUMBER}"
