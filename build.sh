@@ -33,9 +33,11 @@ X86_BIN="${SCRIPT_DIR}/.build/x86_64-apple-macosx/release/${APP_NAME}"
 echo "Creating universal binary..."
 lipo -create "${ARM64_BIN}" "${X86_BIN}" -output "${MACOS_DIR}/${APP_NAME}"
 
-# Copy resources
-cp "${SCRIPT_DIR}/Resources/Info.plist" "${CONTENTS_DIR}/"
+# Copy resources + set build number (YYYYMMDD)
+BUILD_NUMBER=$(date +%Y%m%d)
+sed "s/BUILD_NUMBER/${BUILD_NUMBER}/" "${SCRIPT_DIR}/Resources/Info.plist" > "${CONTENTS_DIR}/Info.plist"
 cp "${SCRIPT_DIR}/Resources/AppIcon.icns" "${RESOURCES_DIR}/"
+echo "Build number: ${BUILD_NUMBER}"
 
 # Create .lproj directories for supported languages (enables Sparkle localization)
 for lang in en ko zh-Hans ja es vi pt-BR; do
