@@ -71,17 +71,31 @@ if [ "${INSTALLED_BUILD}" != "${BUILD_NUMBER}" ]; then
 fi
 echo ""
 
-# Step 4: Create zip
-echo "[4/7] Creating zip..."
+# Step 4: Create zip + DMG
+echo "[4/8] Creating zip..."
 rm -f "/tmp/${ZIP_NAME}"
 cd /Applications && zip -r -y -q "/tmp/${ZIP_NAME}" ClaudeNotify.app
 cd "${SCRIPT_DIR}"
 ZIP_SIZE=$(wc -c < "/tmp/${ZIP_NAME}" | tr -d ' ')
 echo "  ${ZIP_NAME} (${ZIP_SIZE} bytes)"
+
+DMG_NAME="ClaudeNotify-${TAG}.dmg"
+echo "  Creating DMG..."
+MOUNTPOINT=$(mktemp -d)
+rm -f "/tmp/${DMG_NAME}" /tmp/_claude_notify_rw.dmg
+hdiutil create -size 50m -fs HFS+ -volname "ClaudeNotify" -ov /tmp/_claude_notify_rw.dmg >/dev/null
+hdiutil attach /tmp/_claude_notify_rw.dmg -mountpoint "${MOUNTPOINT}" -nobrowse >/dev/null
+ditto "${APP_DIR}" "${MOUNTPOINT}/ClaudeNotify.app"
+ln -s /Applications "${MOUNTPOINT}/Applications"
+hdiutil detach "${MOUNTPOINT}" >/dev/null
+hdiutil convert /tmp/_claude_notify_rw.dmg -format UDZO -ov -o "/tmp/${DMG_NAME}" >/dev/null
+rm -f /tmp/_claude_notify_rw.dmg
+DMG_SIZE=$(wc -c < "/tmp/${DMG_NAME}" | tr -d ' ')
+echo "  ${DMG_NAME} (${DMG_SIZE} bytes)"
 echo ""
 
-# Step 5: Sign with EdDSA
-echo "[5/7] Signing with EdDSA..."
+# Step 5: Sign zip with EdDSA
+echo "[5/8] Signing with EdDSA..."
 SIGN_OUTPUT=$("${SIGN_TOOL}" "/tmp/${ZIP_NAME}" 2>&1)
 ED_SIGNATURE=$(echo "${SIGN_OUTPUT}" | grep -o 'edSignature="[^"]*"' | cut -d'"' -f2)
 ED_LENGTH=$(echo "${SIGN_OUTPUT}" | grep -o 'length="[^"]*"' | cut -d'"' -f2)
@@ -90,7 +104,7 @@ echo "  Length: ${ED_LENGTH}"
 echo ""
 
 # Step 6: Update appcast.xml
-echo "[6/7] Updating appcast.xml..."
+echo "[6/8] Updating appcast.xml..."
 PUB_DATE=$(date -R)
 NEW_ITEM="        <item>
             <title>${TAG}</title>
@@ -128,13 +142,16 @@ with open('${APPCAST}', 'w') as f:
 echo "  appcast.xml updated"
 echo ""
 
-# Step 7: Create GitHub release + push
-echo "[7/7] Creating GitHub release..."
+# Step 7: Commit + push
+echo "[7/8] Committing and pushing..."
 git add "${SCRIPT_DIR}/Resources/Info.plist" "${APPCAST}"
 git commit -m "release: ${TAG} (build ${BUILD_NUMBER})" 2>/dev/null || true
 git push origin main 2>&1 | tail -1
+echo ""
 
-gh release create "${TAG}" "/tmp/${ZIP_NAME}" \
+# Step 8: Create GitHub release
+echo "[8/8] Creating GitHub release..."
+gh release create "${TAG}" "/tmp/${ZIP_NAME}" "/tmp/${DMG_NAME}" \
     --title "${TAG}" \
     --notes "Build ${BUILD_NUMBER} | Version ${MARKETING_VERSION}
 
@@ -145,4 +162,5 @@ echo ""
 echo "=== Release Complete ==="
 echo "  Tag: ${TAG}"
 echo "  URL: https://github.com/isaac9711/claude-notify/releases/tag/${TAG}"
+echo "  Assets: ${ZIP_NAME}, ${DMG_NAME}"
 echo "  Sparkle: Users on older builds will auto-update"
