@@ -7,6 +7,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     private var statusItem: NSStatusItem!
     private let history = NotificationHistory()
     private var updaterController: SPUStandardUpdaterController!
+    private var iconPNGCache: [String: Data] = [:]
 
     // MARK: - App Lifecycle
 
@@ -230,6 +231,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     // MARK: - Notification Sending
 
     func sendNotification(_ payload: NotificationPayload) {
+        // Skip if target app is already in foreground (user is already looking at it)
+        if !payload.activate.isEmpty,
+           let app = NSRunningApplication.runningApplications(withBundleIdentifier: payload.activate).first,
+           app.isActive {
+            return
+        }
+
         let center = UNUserNotificationCenter.current()
 
         let content = UNMutableNotificationContent()
@@ -240,7 +248,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             : UNNotificationSound(named: UNNotificationSoundName(rawValue: payload.sound))
         content.userInfo = payload.dictionary
 
-        // Set subtitle and attach source app icon
+        // Set subtitle and attach source app icon (cached)
         var subtitle = ""
         if !payload.activate.isEmpty,
            let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: payload.activate) {
@@ -248,12 +256,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             subtitle = appName
             content.subtitle = appName
 
-            let icon = NSWorkspace.shared.icon(forFile: appURL.path)
-            let tempURL = FileManager.default.temporaryDirectory
-                .appendingPathComponent("claude-notify-icon-\(UUID().uuidString).png")
-            if let tiffData = icon.tiffRepresentation,
-               let bitmap = NSBitmapImageRep(data: tiffData),
-               let pngData = bitmap.representation(using: .png, properties: [:]) {
+            // Cache icon PNG data per bundleId
+            let pngData: Data? = iconPNGCache[payload.activate] ?? {
+                guard let icon = NSWorkspace.shared.icon(forFile: appURL.path).tiffRepresentation,
+                      let bitmap = NSBitmapImageRep(data: icon),
+                      let data = bitmap.representation(using: .png, properties: [:])
+                else { return nil }
+                iconPNGCache[payload.activate] = data
+                return data
+            }()
+
+            if let pngData = pngData {
+                let tempURL = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("claude-notify-icon-\(payload.activate).png")
                 try? pngData.write(to: tempURL)
                 if let attachment = try? UNNotificationAttachment(identifier: "icon", url: tempURL, options: nil) {
                     content.attachments = [attachment]
@@ -261,16 +276,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
             }
         }
 
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+        // Use session as identifier — same session replaces previous notification
+        let notifId = payload.session.isEmpty ? UUID().uuidString : payload.session
+        let request = UNNotificationRequest(identifier: notifId, content: content, trigger: nil)
         center.add(request) { error in
             if let error = error {
                 fputs("Notification error: \(error.localizedDescription)\n", stderr)
             }
         }
 
-        // Add to history and refresh menu
+        // Add to history and refresh menu async
         history.add(payload: payload, subtitle: subtitle)
-        rebuildMenu()
+        DispatchQueue.main.async { self.rebuildMenu() }
     }
 
     // MARK: - IPC Observer
