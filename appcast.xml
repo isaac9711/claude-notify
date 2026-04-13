@@ -6,16 +6,16 @@
         <description>ClaudeNotify updates</description>
         <language>en</language>
         <item>
-            <title>v1.1 (20260410)</title>
-            <pubDate>Thu, 10 Apr 2026 00:00:00 +0900</pubDate>
+            <title>v1.1.20260413</title>
+            <pubDate>Mon, 13 Apr 2026 19:46:47 +0900</pubDate>
             <sparkle:version>20260413</sparkle:version>
             <sparkle:shortVersionString>1.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <enclosure
-                url="https://github.com/isaac9711/claude-notify/releases/download/v1.1.1/ClaudeNotify-v1.1.1.zip"
-                length="1304008"
+                url="https://github.com/isaac9711/claude-notify/releases/download/v1.1.20260413/ClaudeNotify-v1.1.20260413.zip"
+                length="1308223"
                 type="application/octet-stream"
-                sparkle:edSignature="xH0pEe8mazMAnSFm1akPQTbbtBlv6ZxzxEjahlEAt8dwaPtE5iUOidlk/8vLhyN1U7uRhLrt07cEHXPwlvKOAg=="
+                sparkle:edSignature="gaCFAO5tL3dy0BxhpLSvN1Yo0A/hk9GOKsUnX2G1aGcVwKNFfJ1L4deg7/cujLlEmyVbYdHZQMfW7hxnstsoBw=="
             />
         </item>
     </channel>
