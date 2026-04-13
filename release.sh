@@ -83,11 +83,56 @@ DMG_NAME="ClaudeNotify-${TAG}.dmg"
 echo "  Creating DMG..."
 MOUNTPOINT=$(mktemp -d)
 rm -f "/tmp/${DMG_NAME}" /tmp/_claude_notify_rw.dmg
+hdiutil detach /Volumes/ClaudeNotify 2>/dev/null || true
+
+# Step 4a: Copy files at custom mountpoint (bypasses /Volumes/ write restriction)
 hdiutil create -size 50m -fs HFS+ -volname "ClaudeNotify" -ov /tmp/_claude_notify_rw.dmg >/dev/null
 hdiutil attach /tmp/_claude_notify_rw.dmg -mountpoint "${MOUNTPOINT}" -nobrowse >/dev/null
 ditto "${APP_DIR}" "${MOUNTPOINT}/ClaudeNotify.app"
 ln -s /Applications "${MOUNTPOINT}/Applications"
+cp "${SCRIPT_DIR}/Resources/dmg_background.png" "${MOUNTPOINT}/background.png"
+chflags hidden "${MOUNTPOINT}/background.png"
+rm -rf "${MOUNTPOINT}/.fseventsd"; mkdir "${MOUNTPOINT}/.fseventsd"; touch "${MOUNTPOINT}/.fseventsd/no_log"
+chflags hidden "${MOUNTPOINT}/.fseventsd"
 hdiutil detach "${MOUNTPOINT}" >/dev/null
+
+# Step 4b: Mount at /Volumes/ for Finder layout (no file writes)
+hdiutil attach /tmp/_claude_notify_rw.dmg -noverify >/dev/null
+sleep 2
+chflags hidden /Volumes/ClaudeNotify/background.png 2>/dev/null
+chflags hidden /Volumes/ClaudeNotify/.fseventsd 2>/dev/null
+osascript << 'DMGSCRIPT'
+tell application "Finder"
+    tell disk "ClaudeNotify"
+        open
+        delay 2
+        set current view of container window to icon view
+        set toolbar visible of container window to false
+        set statusbar visible of container window to false
+        set bounds of container window to {300, 200, 840, 580}
+        set viewOptions to icon view options of container window
+        set arrangement of viewOptions to not arranged
+        set icon size of viewOptions to 80
+        try
+            set background picture of viewOptions to file "background.png"
+        end try
+        set position of item "ClaudeNotify.app" of container window to {130, 155}
+        set position of item "Applications" of container window to {410, 155}
+        try
+            set position of item "background.png" of container window to {999, 999}
+        end try
+        try
+            set position of item ".fseventsd" of container window to {999, 999}
+        end try
+        update without registering applications
+        delay 1
+        close
+    end tell
+end tell
+DMGSCRIPT
+sync; sleep 1
+hdiutil detach /Volumes/ClaudeNotify -force >/dev/null 2>&1
+sleep 1
 hdiutil convert /tmp/_claude_notify_rw.dmg -format UDZO -ov -o "/tmp/${DMG_NAME}" >/dev/null
 rm -f /tmp/_claude_notify_rw.dmg
 DMG_SIZE=$(wc -c < "/tmp/${DMG_NAME}" | tr -d ' ')
