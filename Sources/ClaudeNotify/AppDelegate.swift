@@ -235,6 +235,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     // MARK: - Notification Sending
 
     func sendNotification(_ payload: NotificationPayload) {
+        // Skip if target app is in foreground (user is already looking at it)
+        if !payload.activate.isEmpty,
+           let app = NSRunningApplication.runningApplications(withBundleIdentifier: payload.activate).first,
+           app.isActive {
+            return
+        }
+
         let center = UNUserNotificationCenter.current()
 
         let content = UNMutableNotificationContent()
@@ -425,6 +432,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
                 // Fallback to captured windowID
                 activateWindow(windowID: windowID, pid: windowPID)
                 usleep(200000)
+                activated = true
+            }
+            if !activated {
+                // Last resort: just bring iTerm to foreground
+                if let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundleId).first {
+                    app.activate()
+                }
             }
 
             // Step 3: AppleScript to select the correct tab
