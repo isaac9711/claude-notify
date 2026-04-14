@@ -7,15 +7,15 @@
         <language>en</language>
         <item>
             <title>v1.1.20260414</title>
-            <pubDate>Tue, 14 Apr 2026 13:36:59 +0900</pubDate>
+            <pubDate>Tue, 14 Apr 2026 16:00:45 +0900</pubDate>
             <sparkle:version>20260414</sparkle:version>
             <sparkle:shortVersionString>1.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <enclosure
                 url="https://github.com/isaac9711/claude-notify/releases/download/v1.1.20260414/ClaudeNotify-v1.1.20260414.zip"
-                length="1323038"
+                length="1323983"
                 type="application/octet-stream"
-                sparkle:edSignature="hd+bikfz9frnVuv6r4b68FCY5Vpo6sHfx/pTzTks/cVEwRAj+ir7vEL7VsbrtCkZKvAG2hHJYuGFOVBlxJXhDw=="
+                sparkle:edSignature="ohVTapeZYkj22P9m8KSla+xJ4cGHVqUcuF+ghebE8EGGYbrVtNnYQDG+siR+azw3zTIyE+gwAPyl8KZMA5T4AQ=="
             />
         </item>
     </channel>
