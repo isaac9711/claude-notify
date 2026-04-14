@@ -9,12 +9,27 @@ struct NotificationPayload {
     var session: String = ""
     var windowId: String = ""
 
+    // Hook context fields
+    var hookEvent: String = ""         // "Notification" or "Stop"
+    var permissionMode: String = ""    // "default", "plan", "acceptEdits", "auto", "dontAsk"
+    var notificationType: String = ""  // "idle_prompt", "permission_prompt", "auth_success", "elicitation_dialog"
+    var stopReason: String = ""        // "end_turn", "max_tokens", "tool_use"
+    var hookMessage: String = ""       // Claude's message (e.g. "Claude needs your permission to use Bash")
+    var cwd: String = ""               // Working directory from hook
+
     var dictionary: [String: String] {
-        [
+        var d = [
             "title": title, "message": message, "sound": sound,
             "activate": activate, "workspace": workspace,
             "session": session, "windowId": windowId
         ]
+        if !hookEvent.isEmpty { d["hookEvent"] = hookEvent }
+        if !permissionMode.isEmpty { d["permissionMode"] = permissionMode }
+        if !notificationType.isEmpty { d["notificationType"] = notificationType }
+        if !stopReason.isEmpty { d["stopReason"] = stopReason }
+        if !hookMessage.isEmpty { d["hookMessage"] = hookMessage }
+        if !cwd.isEmpty { d["cwd"] = cwd }
+        return d
     }
 
     static func fromArgs(_ args: [String]) -> NotificationPayload {
@@ -41,13 +56,19 @@ struct NotificationPayload {
               let dict = try? JSONSerialization.jsonObject(with: data) as? [String: String]
         else { return nil }
         var payload = NotificationPayload()
-        if let v = dict["title"]     { payload.title = v }
-        if let v = dict["message"]   { payload.message = v }
-        if let v = dict["sound"]     { payload.sound = v }
-        if let v = dict["activate"]  { payload.activate = v }
-        if let v = dict["workspace"] { payload.workspace = v }
-        if let v = dict["session"]   { payload.session = v }
-        if let v = dict["windowId"]  { payload.windowId = v }
+        if let v = dict["title"]            { payload.title = v }
+        if let v = dict["message"]          { payload.message = v }
+        if let v = dict["sound"]            { payload.sound = v }
+        if let v = dict["activate"]         { payload.activate = v }
+        if let v = dict["workspace"]        { payload.workspace = v }
+        if let v = dict["session"]          { payload.session = v }
+        if let v = dict["windowId"]         { payload.windowId = v }
+        if let v = dict["hookEvent"]        { payload.hookEvent = v }
+        if let v = dict["permissionMode"]   { payload.permissionMode = v }
+        if let v = dict["notificationType"] { payload.notificationType = v }
+        if let v = dict["stopReason"]       { payload.stopReason = v }
+        if let v = dict["hookMessage"]      { payload.hookMessage = v }
+        if let v = dict["cwd"]             { payload.cwd = v }
         return payload
     }
 
@@ -59,6 +80,6 @@ struct NotificationPayload {
     }
 
     static func hasNotificationArgs(_ args: [String]) -> Bool {
-        args.contains("-title") || args.contains("-message")
+        args.contains("-title") || args.contains("-message") || args.contains("--from-hook")
     }
 }

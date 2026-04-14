@@ -4,7 +4,7 @@ class HookManager {
     static let shared = HookManager()
 
     // Bump this when hook commands change
-    static let hookVersion = "2.0.3"
+    static let hookVersion = "3.0.0"
 
     var settingsPath: String? {
         get { UserDefaults.standard.string(forKey: "settingsJsonPath") }
@@ -214,11 +214,11 @@ class HookManager {
     }
 
     private var notificationCommand: String {
-        "N=/Applications/ClaudeNotify.app/Contents/MacOS/ClaudeNotifySend; S=; if [ \"$__CFBundleIdentifier\" = \"com.googlecode.iterm2\" ]; then S=\"$ITERM_SESSION_ID\"; elif [ \"$__CFBundleIdentifier\" = \"com.apple.Terminal\" ]; then S=\"/dev/$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')\"; elif [ \"$__CFBundleIdentifier\" = \"dev.warp.Warp-Stable\" ]; then S=\"activate-only\"; fi; $N -title 'Claude Code' -message \"Waiting for input — $(basename \"$PWD\")\" -sound default -activate \"$__CFBundleIdentifier\" -workspace \"\(workspacePart)\" -session \"$S\""
+        "N=/Applications/ClaudeNotify.app/Contents/MacOS/ClaudeNotifySend; S=; if [ \"$__CFBundleIdentifier\" = \"com.googlecode.iterm2\" ]; then S=\"$ITERM_SESSION_ID\"; elif [ \"$__CFBundleIdentifier\" = \"com.apple.Terminal\" ]; then S=\"/dev/$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')\"; elif [ \"$__CFBundleIdentifier\" = \"dev.warp.Warp-Stable\" ]; then S=\"activate-only\"; fi; cat | $N --from-hook -activate \"$__CFBundleIdentifier\" -workspace \"\(workspacePart)\" -session \"$S\""
     }
 
     private var stopCommand: String {
-        "N=/Applications/ClaudeNotify.app/Contents/MacOS/ClaudeNotifySend; S=; if [ \"$__CFBundleIdentifier\" = \"com.googlecode.iterm2\" ]; then S=\"$ITERM_SESSION_ID\"; elif [ \"$__CFBundleIdentifier\" = \"com.apple.Terminal\" ]; then S=\"/dev/$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')\"; elif [ \"$__CFBundleIdentifier\" = \"dev.warp.Warp-Stable\" ]; then S=\"activate-only\"; fi; $N -title 'Claude Code' -message \"Task complete — $(basename \"$PWD\")\" -sound default -activate \"$__CFBundleIdentifier\" -workspace \"\(workspacePart)\" -session \"$S\""
+        "N=/Applications/ClaudeNotify.app/Contents/MacOS/ClaudeNotifySend; S=; if [ \"$__CFBundleIdentifier\" = \"com.googlecode.iterm2\" ]; then S=\"$ITERM_SESSION_ID\"; elif [ \"$__CFBundleIdentifier\" = \"com.apple.Terminal\" ]; then S=\"/dev/$(ps -o tty= -p $PPID 2>/dev/null | tr -d ' ')\"; elif [ \"$__CFBundleIdentifier\" = \"dev.warp.Warp-Stable\" ]; then S=\"activate-only\"; fi; cat | $N --from-hook -activate \"$__CFBundleIdentifier\" -workspace \"\(workspacePart)\" -session \"$S\""
     }
 
     // MARK: - JSON Read/Write

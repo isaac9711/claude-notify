@@ -245,8 +245,65 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         let center = UNUserNotificationCenter.current()
 
         let content = UNMutableNotificationContent()
-        content.title = payload.title
-        content.body = payload.message
+
+        // Build rich notification with emoji indicators
+        if !payload.hookEvent.isEmpty {
+            // Rich mode: context from Claude Code hook
+            let projectSource = !payload.cwd.isEmpty ? payload.cwd : payload.workspace
+            let projectName = projectSource.isEmpty ? "" : (projectSource as NSString).lastPathComponent
+            let emoji: String
+            let eventLabel: String
+
+            if payload.hookEvent == "Notification" {
+                switch payload.notificationType {
+                case "permission_prompt":
+                    emoji = "\u{1F510}"; eventLabel = L10n.get("permissionNeeded")
+                case "idle_prompt":
+                    emoji = "\u{23F3}"; eventLabel = L10n.get("waitingForInput")
+                case "elicitation_dialog":
+                    emoji = "\u{1F4AC}"; eventLabel = L10n.get("inputNeeded")
+                default:
+                    emoji = "\u{1F514}"; eventLabel = payload.message
+                }
+            } else if payload.hookEvent == "Stop" {
+                switch payload.stopReason {
+                case "end_turn":
+                    emoji = "\u{2705}"; eventLabel = L10n.get("taskComplete")
+                case "max_tokens":
+                    emoji = "\u{26A0}\u{FE0F}"; eventLabel = L10n.get("maxTokens")
+                default:
+                    emoji = "\u{23F9}\u{FE0F}"; eventLabel = L10n.get("stopped")
+                }
+            } else {
+                emoji = "\u{1F514}"; eventLabel = payload.message
+            }
+
+            content.title = projectName.isEmpty ? "\(emoji) \(eventLabel)" : "\(emoji) \(eventLabel) — \(projectName)"
+
+            // Body: mode (if not default) + Claude message
+            var body = ""
+            if !payload.permissionMode.isEmpty && payload.permissionMode != "default" {
+                let modeLabel: String
+                switch payload.permissionMode {
+                case "plan": modeLabel = "Plan"
+                case "acceptEdits": modeLabel = "Accept Edits"
+                case "auto": modeLabel = "Auto"
+                case "dontAsk": modeLabel = "Don't Ask"
+                case "bypassPermissions": modeLabel = "Bypass"
+                default: modeLabel = payload.permissionMode
+                }
+                body = body.isEmpty ? modeLabel : "\(body) · \(modeLabel)"
+            }
+            // Add Claude's message for permission prompts
+            if !payload.hookMessage.isEmpty && payload.notificationType == "permission_prompt" {
+                body = body.isEmpty ? payload.hookMessage : "\(body)\n\(payload.hookMessage)"
+            }
+            content.body = body
+        } else {
+            // Legacy mode: plain title + message
+            content.title = payload.title
+            content.body = payload.message
+        }
         content.sound = payload.sound == "default"
             ? .default
             : UNNotificationSound(named: UNNotificationSoundName(rawValue: payload.sound))
