@@ -194,14 +194,19 @@ git commit -m "release: ${TAG} (build ${BUILD_NUMBER})" 2>/dev/null || true
 git push origin main 2>&1 | tail -1
 echo ""
 
-# Step 8: Create GitHub release
+# Step 8: Create or update GitHub release
 echo "[8/8] Creating GitHub release..."
-gh release create "${TAG}" "/tmp/${ZIP_NAME}" "/tmp/${DMG_NAME}" \
-    --title "${TAG}" \
-    --notes "Build ${BUILD_NUMBER} | Version ${MARKETING_VERSION}
+if gh release view "${TAG}" >/dev/null 2>&1; then
+    echo "  Tag ${TAG} exists — updating assets..."
+    gh release upload "${TAG}" "/tmp/${ZIP_NAME}" "/tmp/${DMG_NAME}" --clobber 2>&1 | tail -1
+else
+    gh release create "${TAG}" "/tmp/${ZIP_NAME}" "/tmp/${DMG_NAME}" \
+        --title "${TAG}" \
+        --notes "Build ${BUILD_NUMBER} | Version ${MARKETING_VERSION}
 
 Auto-update: Existing users will receive this update automatically via Sparkle." \
-    2>&1 | tail -1
+        2>&1 | tail -1
+fi
 
 echo ""
 echo "=== Release Complete ==="
