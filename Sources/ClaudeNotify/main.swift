@@ -101,13 +101,8 @@ let alreadyRunning = runningApps.contains { $0.processIdentifier != myPID }
 
 if alreadyRunning && hasNotifArgs {
     // Send notification to running instance via IPC
-    // Auto-capture windowID if not provided and activate bundleId is set
-    var payload = NotificationPayload.fromArgs(args)
-    if payload.windowId.isEmpty && !payload.activate.isEmpty {
-        if let info = getFrontWindowID(bundleId: payload.activate) {
-            payload.windowId = "\(info.windowID):\(info.pid)"
-        }
-    }
+    // windowId is resolved at click time (AX API blocks on background apps)
+    let payload = NotificationPayload.fromArgs(args)
     if let jsonString = payload.toJSON() {
         DistributedNotificationCenter.default().post(
             name: Notification.Name("com.claude.notify.send"),

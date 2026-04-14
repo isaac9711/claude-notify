@@ -27,11 +27,14 @@ swift build -c release --arch x86_64 --package-path "${SCRIPT_DIR}"
 # Create app bundle structure
 mkdir -p "${MACOS_DIR}" "${RESOURCES_DIR}" "${FRAMEWORKS_DIR}"
 
-# Create universal binary
+# Create universal binaries
 ARM64_BIN="${SCRIPT_DIR}/.build/arm64-apple-macosx/release/${APP_NAME}"
 X86_BIN="${SCRIPT_DIR}/.build/x86_64-apple-macosx/release/${APP_NAME}"
-echo "Creating universal binary..."
+ARM64_SEND="${SCRIPT_DIR}/.build/arm64-apple-macosx/release/ClaudeNotifySend"
+X86_SEND="${SCRIPT_DIR}/.build/x86_64-apple-macosx/release/ClaudeNotifySend"
+echo "Creating universal binaries..."
 lipo -create "${ARM64_BIN}" "${X86_BIN}" -output "${MACOS_DIR}/${APP_NAME}"
+lipo -create "${ARM64_SEND}" "${X86_SEND}" -output "${MACOS_DIR}/ClaudeNotifySend"
 
 # Copy resources + set build number
 # Use explicit build number if provided, otherwise YYYYMMDD
@@ -61,6 +64,7 @@ echo "Code signing..."
 codesign --force --sign - --preserve-metadata=entitlements "${FRAMEWORKS_DIR}/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc"
 codesign --force --sign - --preserve-metadata=entitlements "${FRAMEWORKS_DIR}/Sparkle.framework/Versions/B/XPCServices/Installer.xpc"
 codesign --force --sign - --preserve-metadata=entitlements "${FRAMEWORKS_DIR}/Sparkle.framework"
+codesign --force --sign - "${MACOS_DIR}/ClaudeNotifySend"
 codesign --force --sign - --options runtime \
     --entitlements "${SCRIPT_DIR}/Resources/ClaudeNotify.entitlements" \
     "${APP_DIR}"

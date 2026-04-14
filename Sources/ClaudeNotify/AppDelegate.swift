@@ -16,6 +16,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
         let resolved = Language.current.rawValue
         UserDefaults.standard.set([resolved], forKey: "AppleLanguages")
 
+        // Prevent App Nap — menu bar app has no windows, macOS may delay dispatch queues
+        ProcessInfo.processInfo.beginActivity(options: [.userInitiated, .idleSystemSleepDisabled],
+                                              reason: "Notification listener must respond immediately")
+
         setupSparkle()
         setupLoginItem()
         setupMenuBar()
@@ -231,13 +235,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     // MARK: - Notification Sending
 
     func sendNotification(_ payload: NotificationPayload) {
-        // Skip if target app is already in foreground (user is already looking at it)
-        if !payload.activate.isEmpty,
-           let app = NSRunningApplication.runningApplications(withBundleIdentifier: payload.activate).first,
-           app.isActive {
-            return
-        }
-
         let center = UNUserNotificationCenter.current()
 
         let content = UNMutableNotificationContent()

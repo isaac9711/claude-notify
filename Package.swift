@@ -21,6 +21,10 @@ let package = Package(
                     "-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"
                 ])
             ]
+        ),
+        .executableTarget(
+            name: "ClaudeNotifySend",
+            path: "Sources/ClaudeNotifySend"
         )
     ]
 )
